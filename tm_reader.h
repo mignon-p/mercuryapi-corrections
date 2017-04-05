@@ -364,8 +364,16 @@ struct TMR_Reader
   bool fastSearch;
   /* Option for Trigger Read */
   bool triggerRead;
+  /* Option for Duty cycle*/
+  bool dutyCycle;
   /* Option for stop N tag trigger */
   bool isStopNTags;
+  /* Param wait indicator for Reader and protocol param control during continuous read */
+  bool paramWait;
+  /* Param responsefor Reader and protocol param control during continuous read */
+  uint8_t paramMessage[256];
+  /* True Continuous Read Start indicator */
+  bool hasContinuousReadStarted;
   /* Total tag count for sto N trigger */
   uint32_t numberOfTagsToRead;
   /* Does ResetStats feature work on this reader?
@@ -392,7 +400,9 @@ struct TMR_Reader
 #ifdef TMR_ENABLE_BACKGROUND_READS
   bool backgroundSetup, backgroundEnabled, backgroundRunning;
   bool parserSetup, parserEnabled, parserRunning;
+#endif
   bool finishedReading;
+#ifdef TMR_ENABLE_BACKGROUND_READS
   enum TMR_ReadState readState;
   unsigned int queue_depth;
   sem_t queue_slots, queue_length;
@@ -406,16 +416,20 @@ struct TMR_Reader
   pthread_t backgroundReader;
   pthread_t backgroundParser;
   pthread_t autonomousBackgroundReader;
-  TMR_ReadListenerBlock *readListeners;
   TMR_AuthReqListenerBlock *authReqListeners;
+#endif
+  TMR_ReadListenerBlock *readListeners;
   TMR_ReadExceptionListenerBlock *readExceptionListeners;
   TMR_StatsListenerBlock *statsListeners;
+#ifdef TMR_ENABLE_BACKGROUND_READS
   TMR_StatusListenerBlock *statusListeners;
   TMR_Queue_tagReads *tagQueueTail;
   TMR_Queue_tagReads *tagQueueHead;
 #endif
   TMR_Reader_StatsFlag statsFlag;
   TMR_SR_StatusType streamStats;
+  TMR_TRD_MetadataFlag userMetadataFlag;
+  uint8_t portmask;
 
 
   /* Level 1 */
@@ -458,8 +472,8 @@ struct TMR_Reader
   /* Level 3 */
 #ifdef TMR_ENABLE_BACKGROUND_READS
   TMR_Status (*cmdAutonomousReading)(struct TMR_Reader *reader, TMR_TagReadData *trd, TMR_Reader_StatsValues *stats);
-  TMR_Status (*cmdStopReading)(struct TMR_Reader *reader);
 #endif
+  TMR_Status (*cmdStopReading)(struct TMR_Reader *reader);
 };
 
 /**
@@ -875,6 +889,7 @@ TMR_Status TMR_reboot(struct TMR_Reader *reader);
  * @li /reader/gen2/BLF
  * @li /reader/gen2/accessPassword
  * @li /reader/gen2/bap
+ * @li /reader/gen2/protocolExtension
  * @li /reader/gen2/q
  * @li /reader/gen2/session
  * @li /reader/gen2/tagEncoding
@@ -890,6 +905,8 @@ TMR_Status TMR_reboot(struct TMR_Reader *reader);
  * @li /reader/iso180006b/delimiter
  * @li /reader/iso180006b/modulationDepth
  * @li /reader/licenseKey
+ * @li /reader/licensedFeatures
+ * @li /reader/metadataflags
  * @li /reader/powerMode
  * @li /reader/probeBaudRates
  * @li /reader/radio/enablePowerSave

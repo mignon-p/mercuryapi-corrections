@@ -38,7 +38,12 @@ extern "C" {
 
   
 /* This is used to enable the Gen2 secure readdata option */
-bool isSecureAccessEnabled ;
+
+#ifndef BARE_METAL
+  bool isSecureAccessEnabled ;
+#else
+  static bool isSecureAccessEnabled;	
+#endif
 
 typedef enum TMR_SR_OpCode
 {
@@ -110,6 +115,8 @@ typedef enum TMR_SR_Gen2SingulationOptions
   TMR_SR_GEN2_SINGULATION_OPTION_SELECT_ON_USER_MEM      = 0x03,
   TMR_SR_GEN2_SINGULATION_OPTION_SELECT_ON_ADDRESSED_EPC = 0x04,
   TMR_SR_GEN2_SINGULATION_OPTION_USE_PASSWORD            = 0x05,
+  TMR_SR_GEN2_SINGULATION_OPTION_SELECT_ON_LENGTH_OF_EPC = 0x06,
+  TMR_SR_GEN2_SINGULATION_OPTION_SELECT_GEN2TRUNCATE	 = 0x07,
   TMR_SR_GEN2_SINGULATION_OPTION_INVERSE_SELECT_BIT      = 0x08,
   TMR_SR_GEN2_SINGULATION_OPTION_FLAG_METADATA           = 0x10,
   TMR_SR_GEN2_SINGULATION_OPTION_EXTENDED_DATA_LENGTH    = 0x20,
@@ -129,7 +136,7 @@ typedef enum TMR_SR_ModelHardwareID
   TMR_SR_MODEL_M5E_I       = 0x02,
   TMR_SR_MODEL_M4E         = 0x03,
   TMR_SR_MODEL_M6E         = 0x18,
-  TMR_SR_MODEL_M6E_PRC     = 0x19,
+  TMR_SR_MODEL_M6E_I	   = 0x19,
   TMR_SR_MODEL_MICRO       = 0x20,
   TMR_SR_MODEL_M6E_NANO    = 0x30,
   TMR_SR_MODEL_UNKNOWN     = 0xFF,
@@ -141,6 +148,13 @@ typedef enum TMR_SR_ModelMicro
   TMR_SR_MODEL_M6E_MICRO_USB = 0x02,
   TMR_SR_MODEL_M6E_MICRO_USB_PRO = 0x03,
 }TMR_SR_ModelMicro;
+
+typedef enum TMR_SR_ModelM6E_I
+{
+  TMR_SR_MODEL_M6E_I_REV1 = 0x01,
+  TMR_SR_MODEL_M6E_I_PRC  = 0x02,
+  TMR_SR_MODEL_M6E_I_JIC  = 0x03,
+}TMR_SR_ModelM6E_I;
 
 typedef enum TMR_SR_ModelM5EInternational
 {
@@ -175,6 +189,7 @@ TMR_SR_parseMetadataOnly(TMR_Reader *reader, TMR_TagReadData *read, uint16_t fla
                                 uint8_t *i, uint8_t msg[]);
 void TMR_SR_postprocessReaderSpecificMetadata(TMR_TagReadData *read,
                                               TMR_SR_SerialReader *sr);
+bool isContinuousReadParamSupported(TMR_Reader *reader);
 
 /**
  * This structure is returned from read tag multiple embedded commands.
@@ -440,7 +455,8 @@ typedef enum TMR_SR_Gen2Configuration
   TMR_SR_GEN2_CONFIGURATION_LINKFREQUENCY = 0x10,
   TMR_SR_GEN2_CONFIGURATION_TARI    = 0x11,
   TMR_SR_GEN2_CONFIGURATION_Q       = 0x12,
-  TMR_SR_GEN2_CONFIGURATION_BAP    = 0x13
+  TMR_SR_GEN2_CONFIGURATION_BAP    = 0x13,
+  TMR_SR_GEN2_CONFIGURATION_PROTCOLEXTENSION = 0x14
 } TMR_SR_Gen2Configuration;
 
 /**
@@ -516,6 +532,7 @@ typedef enum TMR_SR_SearchFlag
   TMR_SR_SEARCH_FLAG_READ_MULTIPLE_FAST_SEARCH = 128,
   TMR_SR_SEARCH_FLAG_STATS_REPORT_STREAMING = 256,
   TMR_SR_SEARCH_FLAG_GPI_TRIGGER_READ = 512,
+  TMR_SR_SEARCH_FLAG_DUTY_CYCLE_CONTROL = 1024,
 }TMR_SR_SearchFlag;
 
 typedef enum TMR_SR_ISO180006BCommands

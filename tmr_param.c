@@ -60,6 +60,7 @@ static const char *paramNames[1 + TMR_PARAM_MAX] = {
   "/reader/gen2/tari",  /* TMR_PARAM_GEN2_TARI */
   "/reader/gen2/writeMode",/*TMR_PARAM_GEN2_WRITEMODE*/
   "/reader/gen2/bap",  /* TMR_PARAM_GEN2_BAP */
+  "/reader/gen2/protocolExtension",  /* TMR_PARAM_GEN2_PROTOCOLEXTENSION */
   "/reader/iso180006b/BLF",  /* TMR_PARAM_ISO18000_6B_LINKFREQUENCY */
   "/reader/iso180006b/modulationDepth", /* TMR_PARAM_ISO18000_6B_MODULATION_DEPTH */
   "/reader/iso180006b/delimiter", /* TMR_PARAM_ISO18000_6B_DELIMITER */
@@ -115,6 +116,8 @@ static const char *paramNames[1 + TMR_PARAM_MAX] = {
 	"/reader/gen2/writeEarlyExit", /* /reader/gen2/writeEarlyExit */
   "/reader/stats/enable", /* /reader/stats/enable */
   "/reader/trigger/read/Gpi", /* TMR_PARAM_TRIGGER_READ_GPI */
+  "/reader/metadataflags", /* TMR_PARAM_METADATAFLAG */
+  "/reader/licensedFeatures",  /* TMR_PARAM_LICENSED_FEATURES */
 };
 
 

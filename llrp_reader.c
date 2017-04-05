@@ -46,8 +46,14 @@
 #include "tmr_llrp_reader.h"
 #include "llrp_reader_imp.h"
 
-extern uint8_t TMR_LLRP_gpiList[];
-extern uint8_t TMR_LLRP_gpoList[];
+extern uint8_t TMR_LLRP_gpiListSargas[];
+extern uint8_t TMR_LLRP_gpoListSargas[];
+extern uint8_t sizeGpiListSargas;
+extern uint8_t sizeGpoListSargas;
+extern uint8_t TMR_LLRP_gpiListM6Astra[];
+extern uint8_t TMR_LLRP_gpoListM6Astra[];
+extern uint8_t sizeGpiListM6Astra;
+extern uint8_t sizeGpoListM6Astra;
 
 static TMR_Status
 TMR_LLRP_initTxRxMapFromPorts(TMR_Reader *reader)
@@ -215,6 +221,7 @@ TMR_LLRP_boot(TMR_Reader *reader)
   BITSET(lr->paramPresent, TMR_PARAM_ISO180006B_BLF);
   BITSET(lr->paramPresent, TMR_PARAM_REGION_SUPPORTEDREGIONS);
   BITSET(lr->paramPresent, TMR_PARAM_READ_ASYNCOFFTIME);
+  BITSET(lr->paramPresent, TMR_PARAM_LICENSED_FEATURES);
  
   for (i = 0; i < TMR_PARAMWORDS; i++)
   {
@@ -829,6 +836,11 @@ TMR_LLRP_paramSet(struct TMR_Reader *reader, TMR_Param key, const void *value)
         break;
       }
 
+    case TMR_PARAM_LICENSED_FEATURES:
+      {
+        ret = TMR_ERROR_UNSUPPORTED;
+        break;
+      }
 #ifdef TMR_ENABLE_ISO180006B
     case TMR_PARAM_ISO180006B_DELIMITER:
       {
@@ -972,7 +984,8 @@ TMR_LLRP_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
     case TMR_PARAM_GPIO_INPUTLIST:
       {
         if (TMR_LLRP_MODEL_M6 == lr->capabilities.model ||
-        		   TMR_LLRP_MODEL_ASTRA_EX == lr->capabilities.model)
+        		TMR_LLRP_MODEL_ASTRA_EX == lr->capabilities.model ||
+        		TMR_LLRP_MODEL_SARGAS == lr->capabilities.model)
         {
           TMR_uint8List *u8List;
           uint8_t i, numPins;
@@ -980,15 +993,29 @@ TMR_LLRP_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
           u8List = (TMR_uint8List *)value;
 
           u8List->len = 0;
-          numPins = 4;
-          if (u8List->max < 4)
+          if (TMR_LLRP_MODEL_SARGAS == lr->capabilities.model)
+          {
+        	  numPins = sizeGpiListSargas;
+          }
+          else
+          {
+        	  numPins = sizeGpiListM6Astra;
+          }
+          if (u8List->max < numPins)
           {
             numPins = u8List->max;
           }
 
           for(i = 0; i < numPins; i++)
           {
-            LISTAPPEND(u8List, TMR_LLRP_gpiList[i]);
+        	  if (TMR_LLRP_MODEL_SARGAS == lr->capabilities.model)
+        	  {
+        	    LISTAPPEND(u8List, TMR_LLRP_gpiListSargas[i]);
+        	  }
+        	  else
+        	  {
+        	    LISTAPPEND(u8List, TMR_LLRP_gpiListM6Astra[i]);
+        	  }
           }
         }
         break;
@@ -997,7 +1024,8 @@ TMR_LLRP_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
     case TMR_PARAM_GPIO_OUTPUTLIST:
       {
         if (TMR_LLRP_MODEL_M6 == lr->capabilities.model ||
-        		   TMR_LLRP_MODEL_ASTRA_EX == lr->capabilities.model)
+        		TMR_LLRP_MODEL_ASTRA_EX == lr->capabilities.model ||
+        		TMR_LLRP_MODEL_SARGAS == lr->capabilities.model)
         {
           TMR_uint8List *u8List;
           uint8_t i, numPins;
@@ -1005,14 +1033,28 @@ TMR_LLRP_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
           u8List = (TMR_uint8List *)value;
 
           u8List->len = 0;
-          numPins = 4;
-          if (u8List->max < 4)
+          if (TMR_LLRP_MODEL_SARGAS == lr->capabilities.model)
+          {
+        	  numPins = sizeGpoListSargas;
+          }
+          else
+          {
+        	  numPins = sizeGpoListM6Astra;
+          }
+          if (u8List->max < numPins)
           {
             numPins = u8List->max;
           }
           for(i = 0; i < numPins; i++)
           {
-            LISTAPPEND(u8List, TMR_LLRP_gpoList[i]);
+        	  if (TMR_LLRP_MODEL_SARGAS == lr->capabilities.model)
+        	  {
+        	    LISTAPPEND(u8List, TMR_LLRP_gpoListSargas[i]);
+        	  }
+        	  else
+        	  {
+        	    LISTAPPEND(u8List, TMR_LLRP_gpoListM6Astra[i]);
+        	  }
           }
         }
         break;
@@ -1124,6 +1166,10 @@ TMR_LLRP_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
             model = "Astra-EX" ;
             break;
 
+          case TMR_LLRP_MODEL_SARGAS:
+            model = "Sargas" ;
+            break;
+
           default:
             model = "Unknown";
         }
@@ -1133,9 +1179,13 @@ TMR_LLRP_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
       }
     case TMR_PARAM_VERSION_SERIAL:
       {
-        TMR_String *val = (TMR_String *) value;
-        ret = TMR_LLRP_cmdGetVersionSerial (reader, (TMR_String *)val);
+        //TMR_String *val = (TMR_String *) value;
+        //ret = TMR_LLRP_cmdGetVersionSerial (reader, (TMR_String *)val);
+        //break;
+        TMR_String *val = (TMR_String *)value;
+        ret = TMR_LLRP_cmdGetTMDeviceInformationCapabilities (reader, TMR_PARAM_VERSION_SERIAL, (TMR_String *)val);
         break;
+
       }
 
     case TMR_PARAM_VERSION_SOFTWARE:
@@ -1148,7 +1198,7 @@ TMR_LLRP_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
     case TMR_PARAM_VERSION_HARDWARE:
       {
         TMR_String *val = (TMR_String *)value;
-        ret = TMR_LLRP_cmdGetTMDeviceInformationCapabilities (reader, (TMR_String *)val);
+        ret = TMR_LLRP_cmdGetTMDeviceInformationCapabilities (reader, TMR_PARAM_VERSION_HARDWARE, (TMR_String *)val);
 
         break;
       }
@@ -1232,6 +1282,7 @@ TMR_LLRP_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
       {
         TMR_String *hostname = (TMR_String *)value;
         TMR_LLRP_TMReaderConfiguration config;
+        hostname->max = 25;
 
         if (NULL != hostname->value)
         {
@@ -1424,6 +1475,23 @@ TMR_LLRP_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
         break;
       }
 
+    case TMR_PARAM_LICENSED_FEATURES:
+      {
+        if(TMR_LLRP_MODEL_SARGAS == lr->capabilities.model)
+        {
+          TMR_uint8List *val = (TMR_uint8List *)value;
+          ret = TMR_LLRP_cmdGetLicensedFeatures(reader, (TMR_uint8List *)val);
+          if (TMR_SUCCESS != ret)
+          {
+            break;
+          }
+        }
+        else
+        {
+          ret = TMR_ERROR_UNSUPPORTED;
+        }
+        break;
+      }
 #ifdef TMR_ENABLE_ISO180006B
     case TMR_PARAM_ISO180006B_DELIMITER:
       {

@@ -63,13 +63,14 @@ typedef enum paramOption
 static const char *hexChars = "0123456789abcdefABCDEF";
 static const char *selectOptionNames[] = {"EQ", "NE", "GT", "LT"};
 static const char *regions[] = {"UNSPEC", "NA", "EU", "KR", "IN", "JP", "PRC",
-                                "EU2", "EU3", "KR2", "PRC2", "AU", "NZ", "NA2", "NA3"};
+                                "EU2", "EU3", "KR2", "PRC2", "AU", "NZ", "NA2", "NA3", "IS"};
 static const char *powerModes[] = {"FULL", "MINSAVE", "MEDSAVE", "MAXSAVE", "SLEEP"};
 static const char *tagEncodingNames[] = {"FM0", "M2", "M4", "M8"};
 static const char *sessionNames[] = {"S0", "S1", "S2", "S3"};
 static const char *targetNames[] = {"A", "B", "AB", "BA"};
 static const char *tariNames[] = {"TARI_25US", "TARI_12_5US", "TARI_6_25US"};
 static const char *gen2LinkFrequencyNames[] = {"LINK250KHZ", "LINK300KHZ", "LINK320KHZ", "LINK40KHZ", "LINK640KHZ"};
+static const char *gen2ProtocolExtensionNames[] = {"TMR_GEN2_PROTOCOLEXTENSION_LICENSE_NONE", "TMR_GEN2_PROTOCOLEXTENSION_LICENSE_IAV_DENATRAN"};
 static const char *protocolNames[] = {NULL, NULL, NULL, "ISO180006B",
                                       NULL, "GEN2", "ISO180006B_UCODE", "IPX64", "IPX256"};
 static const char *bankNames[] = {"Reserved", "EPC", "TID", "User"};
@@ -1241,13 +1242,9 @@ printReadPlan(const char *string, TMR_ReadPlan *plan, int *nchars)
 static void
 printReaderStats(const char *string, TMR_Reader_StatsFlag *stats)
 {
-  TMR_String temp;
-  char str[100];
   char *end;
 
   end = (char *)string;
-  temp.max = numberof(str);
-  temp.value = str;
 
   end += sprintf(end, "%s", "[");
   switch (*stats)
@@ -1491,6 +1488,38 @@ getSetOneParam(struct TMR_Reader *reader, const char *paramName, TMR_String *str
         {
           char errMsg[256];
           sprintf(errMsg, "Can't parse '%s' as a Gen2 Tari value", end);
+          logErrorMessage(reader, errMsg);
+          notify_exception_listeners(reader, TMR_ERROR_LOADSAVE_CONFIG);
+          return TMR_ERROR_INVALID;
+        }
+        value = i;
+        ret = TMR_paramSet(reader, param, &value);
+      }
+      break;
+    }
+  case TMR_PARAM_GEN2_PROTOCOLEXTENSION:
+    {
+      if (PARAM_OPTION_GET == option)
+      {
+        /* The param get */
+        TMR_GEN2_ProtocolExtension value;
+        
+        ret = TMR_paramGet(reader, param, &value);
+        if (TMR_SUCCESS == ret)
+        {
+          end += sprintf(end, "%s", listname(gen2ProtocolExtensionNames, numberof(gen2ProtocolExtensionNames), value));
+        }
+      }
+      else
+      {
+        TMR_GEN2_ProtocolExtension value;
+        int i;
+
+        i = listid(gen2ProtocolExtensionNames, numberof(gen2ProtocolExtensionNames), end);
+        if (i == -1)
+        {
+          char errMsg[256];
+          sprintf(errMsg, "Can't parse '%s' as a Gen2 Protocol Extension value", end);
           logErrorMessage(reader, errMsg);
           notify_exception_listeners(reader, TMR_ERROR_LOADSAVE_CONFIG);
           return TMR_ERROR_INVALID;

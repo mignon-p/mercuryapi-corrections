@@ -267,6 +267,8 @@ TMR_strerr(TMR_Reader *reader, TMR_Status status)
     return "Autonomous mode is enabled on reader. Please disable it";
   case TMR_ERROR_FIRMWARE_UPDATE_ON_AUTOREAD:
     return "Firmware update is successful. Autonomous mode is already enabled on reader";
+  case TMR_ERROR_TIMESTAMP_NULL:
+    return "Timestamp cannot be null";
 
   default:
     {

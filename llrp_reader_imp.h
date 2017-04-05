@@ -160,6 +160,7 @@ typedef struct TMR_LLRP_TMReaderConfiguration
  **/
 # define  TMR_LLRP_MODEL_M6  0x06
 # define  TMR_LLRP_MODEL_ASTRA_EX 0x30
+# define  TMR_LLRP_MODEL_SARGAS 0x3430
 
 TMR_Status TMR_LLRP_notifyTransportListener(TMR_Reader *reader, LLRP_tSMessage *pMsg, bool tx, int timeout);
 TMR_Status TMR_LLRP_sendMessage(TMR_Reader *reader, LLRP_tSMessage *pMsg, int timeoutMs);
@@ -183,12 +184,15 @@ TMR_Status TMR_LLRP_cmdSetReadTransmitPowerList(TMR_Reader *reader, TMR_PortValu
 
 TMR_Status TMR_LLRP_cmdGetWriteTransmitPowerList(TMR_Reader *reader, TMR_PortValueList *pPortValueList);
 TMR_Status TMR_LLRP_cmdSetWriteTransmitPowerList(TMR_Reader *reader, TMR_PortValueList *pPortValueList);
-TMR_Status TMR_LLRP_cmdGetTMDeviceInformationCapabilities(TMR_Reader *reader, TMR_String  *version);
+TMR_Status TMR_LLRP_cmdGetTMDeviceInformationCapabilities(TMR_Reader *reader, int param, TMR_String  *version);
 TMR_Status TMR_LLRP_cmdGetActiveRFControl(TMR_Reader *reader, TMR_LLRP_RFControl *rfControl);
 TMR_Status TMR_LLRP_cmdSetActiveRFControl(TMR_Reader *reader, TMR_LLRP_RFControl *rfControl);
 TMR_Status TMR_LLRP_cmdGetGen2Session(TMR_Reader *reader, TMR_GEN2_Session  *session);
 TMR_Status TMR_LLRP_cmdSetGen2Session(TMR_Reader *reader, TMR_GEN2_Session  *session);
 TMR_Status TMR_LLRP_cmdSetTMAsyncOffTime(TMR_Reader *reader, uint32_t offtime);
+
+/*ThingMagic Licensed Features*/
+TMR_Status TMR_LLRP_cmdGetLicensedFeatures(TMR_Reader *reader, TMR_uint8List  *features);
 
 /* ThingMagic DeDuplication */
 TMR_Status TMR_LLRP_cmdGetThingMagicDeDuplication(TMR_Reader *reader, TMR_LLRP_TMDeDuplication *duplication);

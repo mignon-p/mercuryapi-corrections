@@ -49,34 +49,79 @@
 
 #define BACKGROUND_RECEIVER_LOOP_PERIOD 100
 
-uint8_t TMR_LLRP_gpiList[] = {3,4,6,7};
-uint8_t TMR_LLRP_gpoList[] = {0,1,2,5};
+uint8_t TMR_LLRP_gpiListSargas[] = {0,1};
+uint8_t TMR_LLRP_gpoListSargas[] = {2,3};
+uint8_t sizeGpiListSargas = sizeof(TMR_LLRP_gpiListSargas)/sizeof(TMR_LLRP_gpiListSargas[0]);
+uint8_t sizeGpoListSargas = sizeof(TMR_LLRP_gpoListSargas)/sizeof(TMR_LLRP_gpoListSargas[0]);
+uint8_t TMR_LLRP_gpiListM6Astra[] = {3,4,6,7};
+uint8_t TMR_LLRP_gpoListM6Astra[] = {0,1,2,5};
+uint8_t sizeGpiListM6Astra = sizeof(TMR_LLRP_gpiListM6Astra)/sizeof(TMR_LLRP_gpiListM6Astra[0]);
+uint8_t sizeGpoListM6Astra = sizeof(TMR_LLRP_gpoListM6Astra)/sizeof(TMR_LLRP_gpoListM6Astra[0]);
 
 static TMR_Status
-TMR_LLRP_llrpToTmGpi(llrp_u16_t llrpNum, uint8_t* tmNum)
+TMR_LLRP_llrpToTmGpi(uint32_t model, llrp_u16_t llrpNum, uint8_t* tmNum)
 {
   int index = llrpNum - 1;
-  int gpiCount = sizeof(TMR_LLRP_gpiList)/sizeof(TMR_LLRP_gpiList[0]);
+  int gpiCount;
+
+  if (TMR_LLRP_MODEL_SARGAS == model)
+  {
+	  gpiCount = sizeGpiListSargas;
+  }
+  else
+  {
+	  gpiCount = sizeGpiListM6Astra;
+  }
   if ((index < 0) || (gpiCount <= index))
   {
     return TMR_ERROR_LLRP_UNDEFINED_VALUE;
   }
-  *tmNum = TMR_LLRP_gpiList[llrpNum - 1];
+
+  if (TMR_LLRP_MODEL_SARGAS == model)
+  {
+	  *tmNum = TMR_LLRP_gpiListSargas[index];
+  }
+  else
+  {
+	  *tmNum = TMR_LLRP_gpiListM6Astra[index];
+  }
   return TMR_SUCCESS;
 }
 
 static TMR_Status
-TMR_LLRP_tmToLlrpGpo(uint8_t tmNum, llrp_u16_t *llrpNum)
+TMR_LLRP_tmToLlrpGpo(uint32_t model, uint8_t tmNum, llrp_u16_t *llrpNum)
 {
-  switch (tmNum)
+  int gpoCount;
+  int i;
+
+  if (TMR_LLRP_MODEL_SARGAS == model)
   {
-  case 0: *llrpNum = 1; break;
-  case 1: *llrpNum = 2; break;
-  case 2: *llrpNum = 3; break;
-  case 5: *llrpNum = 4; break;
-  default: return TMR_ERROR_INVALID;
+	  gpoCount = sizeGpoListSargas;
   }
-  return TMR_SUCCESS;
+  else
+  {
+	  gpoCount = sizeGpoListM6Astra;
+  }
+  for (i = 0; i < gpoCount; i++)
+  {
+	  if (TMR_LLRP_MODEL_SARGAS == model)
+	  {
+	    if (TMR_LLRP_gpoListSargas[i] == tmNum) break;
+	  }
+	  else
+	  {
+	    if (TMR_LLRP_gpoListM6Astra[i] == tmNum) break;
+	  }
+  }
+  if (i == gpoCount)
+  {
+	  return TMR_ERROR_INVALID;
+  }
+  else
+  {
+	  *llrpNum = i + 1;
+	  return TMR_SUCCESS;
+  }
 }
 
 /**
@@ -568,7 +613,7 @@ TMR_LLRP_cmdAntennaDetect(TMR_Reader *reader, uint8_t *count, TMR_LLRP_PortDetec
  * @param version Pointer to TMR_String to hold the version hardware value 
  */
 TMR_Status
-TMR_LLRP_cmdGetTMDeviceInformationCapabilities(TMR_Reader *reader, TMR_String *version)
+TMR_LLRP_cmdGetTMDeviceInformationCapabilities(TMR_Reader *reader, int param, TMR_String *version)
 {
   TMR_Status ret;
   LLRP_tSGET_READER_CAPABILITIES              *pCmd;
@@ -578,6 +623,7 @@ TMR_LLRP_cmdGetTMDeviceInformationCapabilities(TMR_Reader *reader, TMR_String *v
   LLRP_tSThingMagicDeviceControlCapabilities  *pTMCaps;
   LLRP_tSParameter                            *pCustParam;
   llrp_utf8v_t                                 hardwareVersion;
+  llrp_utf8v_t                                 serialNumber;
 
   ret = TMR_SUCCESS;
 
@@ -641,8 +687,16 @@ TMR_LLRP_cmdGetTMDeviceInformationCapabilities(TMR_Reader *reader, TMR_String *v
   pCustParam = LLRP_GET_READER_CAPABILITIES_RESPONSE_beginCustom(pRsp);
   if (NULL != pCustParam)
   {
-    hardwareVersion = ((LLRP_tSDeviceInformationCapabilities *)pCustParam)->HardwareVersion;
-    TMR_stringCopy(version, (char *)hardwareVersion.pValue, (int)hardwareVersion.nValue);
+    if(param == TMR_PARAM_VERSION_HARDWARE)
+    {
+      hardwareVersion = ((LLRP_tSDeviceInformationCapabilities *)pCustParam)->HardwareVersion;
+      TMR_stringCopy(version, (char *)hardwareVersion.pValue, (int)hardwareVersion.nValue);
+    }
+    else if(param == TMR_PARAM_VERSION_SERIAL)
+    {
+      serialNumber = ((LLRP_tSDeviceInformationCapabilities *)pCustParam)->ReaderSerialNumber;
+      TMR_stringCopy(version, (char *)serialNumber.pValue, (int)serialNumber.nValue);
+    }
   }
   /**
    * Done with the response, free the message
@@ -932,7 +986,7 @@ TMR_LLRP_cmdSetGPOState(TMR_Reader *reader, uint8_t count,
 
     /* Construct LLRP parameter */
     pParam = LLRP_GPOWriteData_construct();
-    ret = TMR_LLRP_tmToLlrpGpo(id, &llrpId);
+    ret = TMR_LLRP_tmToLlrpGpo(reader->u.llrpReader.capabilities.model, id, &llrpId);
     if (TMR_SUCCESS != ret) { return ret; }
     LLRP_GPOWriteData_setGPOPortNumber(pParam, llrpId);
     LLRP_GPOWriteData_setGPOData(pParam, high);
@@ -1141,6 +1195,99 @@ TMR_LLRP_cmdSetReadTransmitPowerList(TMR_Reader *reader, TMR_PortValueList *pPor
 }
 
 /**
+ * Command to get Licensed features
+ *
+ * @param reader Reader pointer
+ * @param features  Pointer to TMR_uint8List to hold the Licensed features value
+ */
+TMR_Status
+TMR_LLRP_cmdGetLicensedFeatures(TMR_Reader *reader, TMR_uint8List *features)
+{
+  TMR_Status ret;
+  LLRP_tSGET_READER_CONFIG              *pCmd;
+  LLRP_tSMessage                        *pCmdMsg;
+  LLRP_tSMessage                        *pRspMsg;
+  LLRP_tSGET_READER_CONFIG_RESPONSE     *pRsp;
+  LLRP_tSThingMagicDeviceControlConfiguration  *pTMLicensedFeatures;
+  LLRP_tSParameter                      *pCustParam;
+  llrp_u8v_t                            licensedFeatures;
+
+  ret = TMR_SUCCESS;
+
+  pCmd = LLRP_GET_READER_CONFIG_construct();
+  LLRP_GET_READER_CONFIG_setRequestedData(pCmd, LLRP_GetReaderConfigRequestedData_Identification);
+
+  /**
+   * "/reader/licensedFeatures" is a custom parameter. And is available as part of
+   * ThingMagicDeviceControlConfiguration.
+   * Initialize the custom parameter
+   **/
+  pTMLicensedFeatures = LLRP_ThingMagicDeviceControlConfiguration_construct();
+  if (NULL == pTMLicensedFeatures)
+  {
+    TMR_LLRP_freeMessage((LLRP_tSMessage *)pCmd);
+    return TMR_ERROR_LLRP;
+  }
+  
+  
+  /**
+   * Set the requested data (i.e., Licensed Features)
+   * And add to GET_READER_CONFIG message.
+   **/
+  LLRP_ThingMagicDeviceControlConfiguration_setRequestedData(pTMLicensedFeatures, LLRP_ThingMagicControlConfiguration_ThingMagicLicensedFeatures);
+  if (LLRP_RC_OK != LLRP_GET_READER_CONFIG_addCustom(pCmd, &pTMLicensedFeatures->hdr))
+  {
+    TMR_LLRP_freeMessage((LLRP_tSMessage *)pTMLicensedFeatures);
+    TMR_LLRP_freeMessage((LLRP_tSMessage *)pCmd);
+    return TMR_ERROR_LLRP;
+  }
+  
+  pCmdMsg       = &pCmd->hdr;
+  /**
+   * Now the message is framed completely and send the message
+   **/
+  ret = TMR_LLRP_send(reader, pCmdMsg, &pRspMsg);
+  /**
+   * Done with the command, free the message
+   * and check for message status
+   **/ 
+  TMR_LLRP_freeMessage((LLRP_tSMessage *)pCmd);
+  if (TMR_SUCCESS != ret)
+  {
+    return ret;
+  }
+
+  /**
+   * Check response message status
+   **/
+  pRsp = (LLRP_tSGET_READER_CONFIG_RESPONSE *) pRspMsg;
+  if (TMR_SUCCESS != TMR_LLRP_checkLLRPStatus(pRsp->pLLRPStatus))  
+  {
+    TMR_LLRP_freeMessage(pRspMsg);
+    return TMR_ERROR_LLRP; 
+  }
+  /**
+   * Response is success, extract licensed features from response
+   **/
+  pCustParam = LLRP_GET_READER_CONFIG_RESPONSE_beginCustom(pRsp);
+  if (NULL != pCustParam)
+  {
+    licensedFeatures = LLRP_ThingMagicLicensedFeatures_getLicensedFeatures((LLRP_tSThingMagicLicensedFeatures *) pCustParam);
+  }
+  else
+  {
+    TMR_LLRP_freeMessage(pRspMsg);
+    return TMR_ERROR_LLRP_MSG_PARSE_ERROR;
+  }
+
+  memcpy(features->list, licensedFeatures.pValue, licensedFeatures.nValue);
+
+  TMR_LLRP_freeMessage(pRspMsg);
+
+  return ret;
+
+}
+/**
  * Command to get Version Serial
  *
  * @param reader Reader pointer
@@ -1268,7 +1415,7 @@ TMR_LLRP_cmdGetGPIState(TMR_Reader *reader, uint8_t *count, TMR_GpioPin state[])
           while (NULL != list)
           {
             TMR_GpioPin* pin = &state[*count];
-            ret = TMR_LLRP_llrpToTmGpi(list->GPIPortNum, &pin->id);
+            ret = TMR_LLRP_llrpToTmGpi(reader->u.llrpReader.capabilities.model, list->GPIPortNum, &pin->id);
             if (TMR_SUCCESS != ret) { return ret; }
             pin->high = (LLRP_GPIPortState_High == list->eState);
             pin->output = false;
@@ -1321,7 +1468,7 @@ TMR_LLRP_cmdGetGPIState(TMR_Reader *reader, uint8_t *count, TMR_GpioPin state[])
       while (NULL != list)
       {
         TMR_GpioPin* pin = &state[*count];
-        ret = TMR_LLRP_llrpToTmGpi(list->GPIPortNum, &pin->id);
+        ret = TMR_LLRP_llrpToTmGpi(reader->u.llrpReader.capabilities.model, list->GPIPortNum, &pin->id);
         if (TMR_SUCCESS != ret) { return ret; }
         pin->high = (LLRP_GPIPortState_High == list->eState);
         pin->output = false;
@@ -2238,6 +2385,42 @@ TMR_LLRP_cmdAddROSpec(TMR_Reader *reader, uint16_t readDuration,
           LLRP_InventoryParameterSpec_addCustom(pInventoryParameterSpec, (LLRP_tSParameter *)pInventoryParameterCustom);
         }
 #endif /* TMR_ENABLE_ISO180006B */
+      else if(TMR_TAG_PROTOCOL_ATA == protocol)
+      {
+        /* For other protocol specify the Inventory Parameter protocol ID as unspecified */
+        LLRP_InventoryParameterSpec_setProtocolID(pInventoryParameterSpec, LLRP_AirProtocols_Unspecified);
+        LLRP_tSThingMagicCustomAirProtocols *pInventoryParameterCustom;
+        pInventoryParameterCustom = LLRP_ThingMagicCustomAirProtocols_construct();
+        LLRP_ThingMagicCustomAirProtocols_setcustomProtocolId(pInventoryParameterCustom,
+            LLRP_ThingMagicCustomAirProtocolList_Ata);
+
+        /* add this as a custom parameter to InventoryParameterSpec */
+        LLRP_InventoryParameterSpec_addCustom(pInventoryParameterSpec, (LLRP_tSParameter *)pInventoryParameterCustom);
+      }
+      else if(TMR_TAG_PROTOCOL_IPX64 == protocol)
+      {
+        /* For other protocol specify the Inventory Parameter protocol ID as unspecified */
+        LLRP_InventoryParameterSpec_setProtocolID(pInventoryParameterSpec, LLRP_AirProtocols_Unspecified);
+        LLRP_tSThingMagicCustomAirProtocols *pInventoryParameterCustom;
+        pInventoryParameterCustom = LLRP_ThingMagicCustomAirProtocols_construct();
+        LLRP_ThingMagicCustomAirProtocols_setcustomProtocolId(pInventoryParameterCustom,
+            LLRP_ThingMagicCustomAirProtocolList_IPX64);
+
+        /* add this as a custom parameter to InventoryParameterSpec */
+        LLRP_InventoryParameterSpec_addCustom(pInventoryParameterSpec, (LLRP_tSParameter *)pInventoryParameterCustom);
+      }
+      else if(TMR_TAG_PROTOCOL_IPX256 == protocol)
+      {
+        /* For other protocol specify the Inventory Parameter protocol ID as unspecified */
+        LLRP_InventoryParameterSpec_setProtocolID(pInventoryParameterSpec, LLRP_AirProtocols_Unspecified);
+        LLRP_tSThingMagicCustomAirProtocols *pInventoryParameterCustom;
+        pInventoryParameterCustom = LLRP_ThingMagicCustomAirProtocols_construct();
+        LLRP_ThingMagicCustomAirProtocols_setcustomProtocolId(pInventoryParameterCustom,
+            LLRP_ThingMagicCustomAirProtocolList_IPX256);
+
+        /* add this as a custom parameter to InventoryParameterSpec */
+        LLRP_InventoryParameterSpec_addCustom(pInventoryParameterSpec, (LLRP_tSParameter *)pInventoryParameterCustom);
+      }
       else
       {
         return TMR_ERROR_UNIMPLEMENTED_FEATURE;
@@ -4512,10 +4695,13 @@ TMR_LLRP_cmdGetTMDeviceProtocolCapabilities(TMR_Reader *reader, TMR_TagProtocolL
     {
       protocolList->list[i] = LLRP_SupportedProtocols_getProtocol(pSupportedProtocols);
       /**
-       * Currently we are suppoerting only GEn2 ans Iso protocol
+       *Adding support for ATA, IPX64 and IPX256 protocols 
        **/
       if (TMR_TAG_PROTOCOL_GEN2 == protocolList->list[i] || 
-                                 TMR_TAG_PROTOCOL_ISO180006B == protocolList->list[i]) 
+          TMR_TAG_PROTOCOL_ISO180006B == protocolList->list[i] || 
+          TMR_TAG_PROTOCOL_ATA == protocolList->list[i] ||
+          TMR_TAG_PROTOCOL_IPX64 == protocolList->list[i] ||
+          TMR_TAG_PROTOCOL_IPX256 == protocolList->list[i]) 
         reader->u.llrpReader.supportedProtocols |= (1 << (protocolList->list[i] -1 ));
       protocolList->len ++;
     }

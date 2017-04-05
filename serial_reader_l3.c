@@ -115,6 +115,7 @@ TMR_SR_sendMessage(TMR_Reader *reader, uint8_t *data, uint8_t *opcode, uint32_t 
   TMR_Status ret;
   uint16_t crc;
   uint8_t len;
+  uint8_t j;
   //uint8_t byteLen;
 
   sr = &reader->u.serialReader;
@@ -161,6 +162,27 @@ TMR_SR_sendMessage(TMR_Reader *reader, uint8_t *data, uint8_t *opcode, uint32_t 
   data[0] = 0xff;
   len = data[1];
   *opcode = data[2];
+
+  if (isContinuousReadParamSupported(reader))
+  {
+	  for (j = 0; j <= len; j++)
+	  {
+		  reader->paramMessage[j] = data[2 + j];
+	  }
+	  data[1] = 5 + len;
+	  data[2] = 0x2f;
+	  data[3] = 0x00;
+	  data[4] = 0x00;
+	  data[5] = 0x04;
+	  data[6] = len;
+	  for (j = 0; j <= len ; j++)
+	  {
+		  data[7 + j] = reader->paramMessage[j];
+	  }
+	  len = data[1];
+	  reader->paramWait = true;
+  }
+
  // if (reader->u.serialReader.crcEnabled)
   {
   crc = tm_crc(&data[1], len + 2);
@@ -172,6 +194,41 @@ TMR_SR_sendMessage(TMR_Reader *reader, uint8_t *data, uint8_t *opcode, uint32_t 
   return ret;
 }
 
+
+bool
+isContinuousReadParamSupported(TMR_Reader *reader)
+{
+	uint16_t i; 
+	uint8_t *readerVersion = reader->u.serialReader.versionInfo.fwVersion ;
+	uint8_t checkVersion[4];
+
+	if (reader->hasContinuousReadStarted == false || reader->continuousReading == false)
+		return false;
+
+	switch (reader->u.serialReader.versionInfo.hardware[0])
+	{
+		case TMR_SR_MODEL_M6E:
+		case TMR_SR_MODEL_M6E_I:
+			checkVersion[0] = 0x01; checkVersion[1] = 0x21; checkVersion[2] = 0x01; checkVersion[3] = 0x19;
+			break;
+		case TMR_SR_MODEL_MICRO:
+			checkVersion[0] = 0x01; checkVersion[1] = 0x09; checkVersion[2] = 0x00; checkVersion[3] = 0x14;
+			break;
+		case TMR_SR_MODEL_M6E_NANO:
+			checkVersion[0] = 0x01; checkVersion[1] = 0x07; checkVersion[2] = 0x00; checkVersion[3] = 0x0E;
+			break;
+		default:
+			checkVersion[0] = 0xFF; checkVersion[1] = 0xFF; checkVersion[2] = 0xFF; checkVersion[3] = 0xFF;
+	}
+	for (i = 0; i < 4; i++)
+	{
+		if (readerVersion[i] < checkVersion[i])
+		{
+			return false;
+		}
+	}
+	return true;
+}
 
 /**
  * Receive a response.
@@ -344,10 +401,31 @@ TMR_SR_sendTimeout(TMR_Reader *reader, uint8_t *data, uint32_t timeoutMs)
   {
     return ret;
   }
-  ret = TMR_SR_receiveMessage(reader, data, opcode, timeoutMs);
-  if (TMR_SUCCESS != ret)
+  if (isContinuousReadParamSupported(reader))
   {
-    return ret;
+	  while(reader->paramWait)
+	  { }
+	  reader->paramWait = false;	  
+	  memcpy(data , &reader->paramMessage[5], reader->paramMessage[1] * sizeof(uint8_t));
+	  data[0] = 0xFF;
+	  ret = (TMR_Status) GETU16AT(&reader->paramMessage[0], 3);
+	  if (TMR_SUCCESS != ret)
+	  {
+		  return TMR_ERROR_CODE(ret);
+	  }
+	  ret = (TMR_Status) GETU16AT(data, 3);
+	  if (TMR_SUCCESS != ret)
+	  {
+		  return TMR_ERROR_CODE(ret);
+	  }
+  }
+  else
+  {
+    ret = TMR_SR_receiveMessage(reader, data, opcode, timeoutMs);
+    if (TMR_SUCCESS != ret)
+    {
+		return ret;
+	}
   }
   return ret;
 }
@@ -535,7 +613,7 @@ TMR_SR_cmdSetUserProfile(TMR_Reader *reader,TMR_SR_UserConfigOperation op,TMR_SR
         
         /* Call the helper function to frame the multi protocol read command */
         ret = TMR_SR_msgSetupMultipleProtocolSearch(reader, tempMsg, TMR_SR_OPCODE_READ_TAG_ID_MULTIPLE, protocolList,
-          TMR_TRD_METADATA_FLAG_ALL, antennas, filters, (uint16_t)readTime);
+          reader->userMetadataFlag, antennas, filters, (uint16_t)readTime);
         if (TMR_SUCCESS != ret)
         {
           return ret;
@@ -593,7 +671,7 @@ TMR_SR_cmdSetUserProfile(TMR_Reader *reader,TMR_SR_UserConfigOperation op,TMR_SR
       antennaList = &(rp->u.simple.antennas);
 
       ret = TMR_SR_msgSetupMultipleProtocolSearch(reader, tempMsg, TMR_SR_OPCODE_READ_TAG_ID_MULTIPLE, protocolList,
-        TMR_TRD_METADATA_FLAG_ALL, antennas, filters, (uint16_t)readTime);
+        reader->userMetadataFlag, antennas, filters, (uint16_t)readTime);
       if (TMR_SUCCESS != ret)
       {
         return ret;
@@ -1043,7 +1121,7 @@ TMR_SR_msgSetupReadTagMultiple(TMR_Reader *reader, uint8_t *msg, uint8_t *i, uin
                                TMR_GEN2_Password accessPassword)
 {
   return TMR_SR_msgSetupReadTagMultipleWithMetadata(reader, msg, i, timeout,
-    searchFlag, TMR_TRD_METADATA_FLAG_ALL, filter, protocol,accessPassword);
+    searchFlag, reader->userMetadataFlag, filter, protocol,accessPassword);
 }
 
 
@@ -1127,6 +1205,15 @@ TMR_SR_msgSetupReadTagMultipleWithMetadata(TMR_Reader *reader, uint8_t *msg, uin
     reader->triggerRead = false;
   }
 
+  /**
+   * Add the duty cycle flag depending on the user choice
+   */
+  if (reader->dutyCycle)
+  {
+    searchFlag = (TMR_SR_SearchFlag)(searchFlag
+		|TMR_SR_SEARCH_FLAG_DUTY_CYCLE_CONTROL);
+  }
+
   if (reader->isStopNTags && !reader->continuousReading)
   {
     /**
@@ -1139,7 +1226,13 @@ TMR_SR_msgSetupReadTagMultipleWithMetadata(TMR_Reader *reader, uint8_t *msg, uin
 
   SETU16(msg, *i, searchFlag);
   SETU16(msg, *i, timeout);
-
+  if(reader->dutyCycle)
+  {
+	  uint32_t offtime;
+	  ret = TMR_paramGet(reader,TMR_PARAM_READ_ASYNCOFFTIME,&offtime);
+	  SETU16(msg, *i, (uint16_t)offtime);
+  }
+  reader->dutyCycle = false;
   if (reader->continuousReading)
   {
     SETU16(msg, *i, metadataFlag);
@@ -1335,7 +1428,7 @@ TMR_SR_executeEmbeddedRead(TMR_Reader *reader, uint8_t *msg, uint16_t timeout,
       int readIdx = 8;
       if ((TMR_SR_SEARCH_FLAG_LARGE_TAG_POPULATION_SUPPORT & searchFlags) &&
           ((TMR_SR_MODEL_M6E == reader->u.serialReader.versionInfo.hardware[0]) ||
-           (TMR_SR_MODEL_M6E_PRC == reader->u.serialReader.versionInfo.hardware[0]) ||
+           (TMR_SR_MODEL_M6E_I == reader->u.serialReader.versionInfo.hardware[0]) ||
            (TMR_SR_MODEL_M6E_NANO == reader->u.serialReader.versionInfo.hardware[0]) ||
           (TMR_SR_MODEL_MICRO == reader->u.serialReader.versionInfo.hardware[0])))
 	    {
@@ -1949,6 +2042,11 @@ TMR_SR_postprocessReaderSpecificMetadata(TMR_TagReadData *read, TMR_SR_SerialRea
           tx == sr->txRxMap->list[j].txPort)
       {
         read->antenna = sr->txRxMap->list[j].antenna;
+		if (read->gpioCount > 2)
+		{
+			if (read->gpio[2].high)
+				read->antenna += 16;
+		}
         break;
       }
     }
@@ -2610,6 +2708,7 @@ TMR_Status TMR_SR_cmdSetProtocolLicenseKey(TMR_Reader *reader,
 {
   uint8_t msg[TMR_SR_MAX_PACKET_SIZE];
   uint8_t i;
+  TMR_Status ret;
   i = 2;
   SETU8(msg, i, TMR_SR_OPCODE_SET_PROTOCOL_LICENSEKEY);
   SETU8(msg, i, option);
@@ -2622,8 +2721,19 @@ TMR_Status TMR_SR_cmdSetProtocolLicenseKey(TMR_Reader *reader,
 
   msg[1] = i - 3; /* Install length */
 
-  return TMR_SR_send(reader, msg);
+  ret = TMR_SR_send(reader, msg);
+  if (ret != TMR_SUCCESS)
+  {
+	  return ret;
+  }
 
+  reader->u.serialReader.versionInfo.protocols = 0x00;
+  for (i = 0; i < msg[1] - 2 ; i += 2)
+  {
+	reader->u.serialReader.versionInfo.protocols |= (1 << (GETU8AT(msg, 7 + i) - 1)); 
+  }
+
+  return TMR_SUCCESS;
 }
 
 TMR_Status
@@ -2652,7 +2762,11 @@ TMR_SR_cmdSetProtocolConfiguration(TMR_Reader *reader, TMR_TagProtocol protocol,
       break;
 
     case TMR_SR_GEN2_CONFIGURATION_LINKFREQUENCY:
+	#ifndef	BARE_METAL
       switch (*(int *)value)
+	#else
+	  switch (*(TMR_GEN2_LinkFrequency *)value)
+    #endif
       {
       case 40:
         BLF = 0x03;
@@ -2677,6 +2791,10 @@ TMR_SR_cmdSetProtocolConfiguration(TMR_Reader *reader, TMR_TagProtocol protocol,
 
     case TMR_SR_GEN2_CONFIGURATION_TARI:
       SETU8(msg, i, *(TMR_GEN2_Tari *)value);
+      break;
+
+	case TMR_SR_GEN2_CONFIGURATION_PROTCOLEXTENSION:
+	  SETU8(msg, i, *(TMR_GEN2_ProtocolExtension *)value);
       break;
       
     case TMR_SR_GEN2_CONFIGURATION_TARGET:
@@ -3401,6 +3519,10 @@ TMR_SR_cmdGetProtocolConfiguration(TMR_Reader *reader, TMR_TagProtocol protocol,
       *(TMR_GEN2_Tari *)value = (TMR_GEN2_Tari)GETU8AT(msg, 7);
       break;
 
+	case TMR_SR_GEN2_CONFIGURATION_PROTCOLEXTENSION:
+	  *(TMR_GEN2_ProtocolExtension *)value = (TMR_GEN2_ProtocolExtension)GETU8AT(msg, 7);
+      break;
+
     case TMR_SR_GEN2_CONFIGURATION_BAP:
       {
         TMR_GEN2_Bap *b = value;
@@ -3730,6 +3852,7 @@ TMR_Status TMR_SR_cmdMultipleProtocolSearch(TMR_Reader *reader,TMR_SR_OpCode op,
       {
         return ret;
       }
+	  reader->hasContinuousReadStarted = true;
       sr->tagsRemaining=1;
     }
     else
@@ -3794,6 +3917,12 @@ TMR_SR_cmdGetAvailableProtocols(TMR_Reader *reader,
     LISTAPPEND(protocols, (TMR_TagProtocol)GETU16AT(msg, 5 + i)); 
   }
 
+  reader->u.serialReader.versionInfo.protocols = 0x0000;
+  for (i = 0 ; i < protocols->len; i ++)
+  {
+    reader->u.serialReader.versionInfo.protocols |= (1 << (protocols->list[i] - 1)); 
+  }
+  
   return TMR_SUCCESS;
 }
 
@@ -3869,7 +3998,15 @@ filterbytes(TMR_TagProtocol protocol, const TMR_TagFilter *filter,
   {
     if (usePassword)
     {
-      SETU32(msg, *i, accessPassword);
+		if (filter && TMR_FILTER_TYPE_GEN2_SELECT == filter->type)
+		{
+			if (filter->u.gen2Select.bank != TMR_GEN2_EPC_LENGTH_FILTER)
+				SETU32(msg, *i, accessPassword);
+		}
+		else
+		{
+			SETU32(msg, *i, accessPassword);
+		}
     }
     if (NULL == filter)
     {
@@ -3890,33 +4027,40 @@ filterbytes(TMR_TagProtocol protocol, const TMR_TagFilter *filter,
         *option |= fp->bank;
       }
 
-      if(true == fp->invert)
-      {
-        *option |= TMR_SR_GEN2_SINGULATION_OPTION_INVERSE_SELECT_BIT;
-      }
+	  if (fp->bank == TMR_GEN2_EPC_LENGTH_FILTER)
+	  {
+		  SETU16(msg, *i, fp->maskBitLength);
+	  }
+	  else
+	  {
+		  if(true == fp->invert)
+		  {
+			*option |= TMR_SR_GEN2_SINGULATION_OPTION_INVERSE_SELECT_BIT;
+		  }
 
-      if (fp->maskBitLength > 255)
-      {
-        *option |= TMR_SR_GEN2_SINGULATION_OPTION_EXTENDED_DATA_LENGTH;
-      }
+		  if (fp->maskBitLength > 255)
+		  {
+			*option |= TMR_SR_GEN2_SINGULATION_OPTION_EXTENDED_DATA_LENGTH;
+		  }
 
-      SETU32(msg, *i, fp->bitPointer);
+		  SETU32(msg, *i, fp->bitPointer);
 
-      if (fp->maskBitLength > 255)
-      {
-        SETU8(msg, *i, (fp->maskBitLength >> 8) & 0xFF);
-      }
-      SETU8(msg, *i, fp->maskBitLength & 0xFF);
+		  if (fp->maskBitLength > 255)
+		  {
+			SETU8(msg, *i, (fp->maskBitLength >> 8) & 0xFF);
+		  }
+		  SETU8(msg, *i, fp->maskBitLength & 0xFF);
 
-      if (*i + 1 + tm_u8s_per_bits(fp->maskBitLength) > TMR_SR_MAX_PACKET_SIZE)
-      {
-        return TMR_ERROR_TOO_BIG;
-      }
+		  if (*i + 1 + tm_u8s_per_bits(fp->maskBitLength) > TMR_SR_MAX_PACKET_SIZE)
+		  {
+			return TMR_ERROR_TOO_BIG;
+		  }
 
-      for(j = 0; j < tm_u8s_per_bits(fp->maskBitLength) ; j++)
-      {
-        SETU8(msg, *i, fp->mask[j]);
-      }
+		  for(j = 0; j < tm_u8s_per_bits(fp->maskBitLength) ; j++)
+		  {
+			SETU8(msg, *i, fp->mask[j]);
+		  }
+	  }
     }
     else if (TMR_FILTER_TYPE_TAG_DATA == filter->type)
     {
@@ -7034,6 +7178,7 @@ TMR_SR_cmdStopReading(struct TMR_Reader *reader)
   uint8_t msg[TMR_SR_MAX_PACKET_SIZE];
   uint8_t i, op;
   
+  reader->hasContinuousReadStarted = false;
   i = 2;
   op = TMR_SR_OPCODE_MULTI_PROTOCOL_TAG_OP;
   SETU8(msg, i, op);

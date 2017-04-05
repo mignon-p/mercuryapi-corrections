@@ -51,8 +51,9 @@ typedef enum TMR_Region
   /** People's Republic of China(840MHZ)*/TMR_REGION_PRC2 = 10,
   /** Australia */                  TMR_REGION_AU   = 11,
   /** New Zealand !!EXPERIMENTAL!! */ TMR_REGION_NZ   = 12,
-  /** Reduced FCC region */           TMR_REGION_NA2 = 13,
+  /** Reduced FCC region */         TMR_REGION_NA2 = 13,
   /** 5MHZ FCC band */              TMR_REGION_NA3 = 14,
+  /** Israel  **/					TMR_REGION_IS= 15,
   /** Open */                       TMR_REGION_OPEN = 0xFF
 } TMR_Region;
 

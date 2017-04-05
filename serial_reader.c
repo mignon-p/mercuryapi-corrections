@@ -37,6 +37,7 @@
 #include "osdep.h"
 
 #define HASPORT(mask, port) ((1 << ((port)-1)) & (mask))
+#define TMR_MAX_PROTOCOLS   (32)
 
 #ifdef TMR_ENABLE_SERIAL_READER
 
@@ -150,7 +151,7 @@ TMR_SR_configPreamble(TMR_SR_SerialReader *sr)
   {
   case TMR_SR_MODEL_M6E:
   case TMR_SR_MODEL_MICRO:
-  case TMR_SR_MODEL_M6E_PRC:
+  case TMR_SR_MODEL_M6E_I:
     value = true;
     break;
   case TMR_SR_MODEL_M6E_NANO:
@@ -230,7 +231,7 @@ TMR_SR_boot(TMR_Reader *reader, uint32_t currentBaudRate)
    * In case for M6E and it's varient  check for CRC
    **/
   if ((TMR_SR_MODEL_M6E == reader->u.serialReader.versionInfo.hardware[0]) ||
-      (TMR_SR_MODEL_M6E_PRC == reader->u.serialReader.versionInfo.hardware[0]) ||
+      (TMR_SR_MODEL_M6E_I == reader->u.serialReader.versionInfo.hardware[0]) ||
       (TMR_SR_MODEL_M6E_NANO == reader->u.serialReader.versionInfo.hardware[0]) ||
       (TMR_SR_MODEL_MICRO == reader->u.serialReader.versionInfo.hardware[0]))
   {
@@ -297,7 +298,7 @@ TMR_SR_boot(TMR_Reader *reader, uint32_t currentBaudRate)
      this is the place to do it. */
   sr->gpioDirections = -1; /* Needs fetching */
   reader->continuousReading = ((TMR_SR_MODEL_M6E == sr->versionInfo.hardware[0]) ||
-      (TMR_SR_MODEL_M6E_PRC == sr->versionInfo.hardware[0]) ||
+      (TMR_SR_MODEL_M6E_I == sr->versionInfo.hardware[0]) ||
       (TMR_SR_MODEL_M6E_NANO == reader->u.serialReader.versionInfo.hardware[0]) ||
       (TMR_SR_MODEL_MICRO == sr->versionInfo.hardware[0]));
   reader->continuousReading = false; //fix bug 1745 in the current release temporarily
@@ -308,7 +309,7 @@ TMR_SR_boot(TMR_Reader *reader, uint32_t currentBaudRate)
    * 1.21.1.2 has support for new reader stats.
    **/
   if (
-    (((TMR_SR_MODEL_M6E == sr->versionInfo.hardware[0]) || (TMR_SR_MODEL_M6E_PRC == sr->versionInfo.hardware[0]))
+    (((TMR_SR_MODEL_M6E == sr->versionInfo.hardware[0]) || (TMR_SR_MODEL_M6E_I == sr->versionInfo.hardware[0]))
     && compareVersion(reader, 1, 21, 1, 2))
     || ((TMR_SR_MODEL_MICRO == sr->versionInfo.hardware[0]) && compareVersion(reader, 1, 3, 0, 20))
     || ((TMR_SR_MODEL_M6E_NANO == sr->versionInfo.hardware[0]) && compareVersion(reader, 1, 3, 2, 74))
@@ -354,6 +355,7 @@ TMR_SR_boot(TMR_Reader *reader, uint32_t currentBaudRate)
   BITSET(sr->paramPresent, TMR_PARAM_GEN2_TAGENCODING);
   BITSET(sr->paramPresent, TMR_PARAM_GEN2_SESSION);
   BITSET(sr->paramPresent, TMR_PARAM_GEN2_TARGET);
+  BITSET(sr->paramPresent, TMR_PARAM_GEN2_PROTOCOLEXTENSION);
   BITSET(sr->paramPresent, TMR_PARAM_READ_ASYNCOFFTIME);
   BITSET(sr->paramPresent, TMR_PARAM_READ_ASYNCONTIME);
   BITSET(sr->paramPresent, TMR_PARAM_READ_PLAN);
@@ -400,7 +402,7 @@ TMR_SR_boot(TMR_Reader *reader, uint32_t currentBaudRate)
   if ((TMR_SR_MODEL_M6E == sr->versionInfo.hardware[0]) ||
       (TMR_SR_MODEL_MICRO == sr->versionInfo.hardware[0]) ||
       (TMR_SR_MODEL_M6E_NANO == reader->u.serialReader.versionInfo.hardware[0]) ||
-      (TMR_SR_MODEL_M6E_PRC == sr->versionInfo.hardware[0]))
+      (TMR_SR_MODEL_M6E_I == sr->versionInfo.hardware[0]))
 
   {
     BITSET(sr->paramPresent, TMR_PARAM_LICENSE_KEY);
@@ -464,12 +466,29 @@ TMR_SR_boot(TMR_Reader *reader, uint32_t currentBaudRate)
   }
   if (TMR_TAG_PROTOCOL_NONE == sr->currentProtocol)
   {
-    sr->currentProtocol = TMR_TAG_PROTOCOL_GEN2;
-    ret = TMR_SR_cmdSetProtocol(reader, sr->currentProtocol);
-    if (TMR_SUCCESS != ret)
-    {
-      return ret;
-    }
+	TMR_TagProtocolList protocolList;
+	TMR_TagProtocol protocols[TMR_MAX_PROTOCOLS];
+	uint8_t index;
+	protocolList.list = &protocols[0];
+	protocolList.max = TMR_MAX_PROTOCOLS;
+	/* 
+	 * Serach whether GEN2 Protocol is supported by reader in its protocol list. 
+	 * If so set it as current protocol, else leave protocol selection to user.
+	 */ 
+	ret = TMR_SR_cmdGetAvailableProtocols(reader, &protocolList);
+	for(index = 0; index < protocolList.len; index++)
+	{
+	  if(TMR_TAG_PROTOCOL_GEN2 == protocolList.list[index])
+	  {
+		ret = TMR_SR_cmdSetProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
+		if (TMR_SUCCESS != ret)
+		{
+		  return ret;
+		}
+		sr->currentProtocol = TMR_TAG_PROTOCOL_GEN2;
+		break;
+	  }
+	}
   }
   reader->tagOpParams.protocol = sr->currentProtocol;
 
@@ -483,7 +502,7 @@ TMR_SR_boot(TMR_Reader *reader, uint32_t currentBaudRate)
   if ((TMR_SR_MODEL_M6E != sr->versionInfo.hardware[0]) &&
       (TMR_SR_MODEL_MICRO != sr->versionInfo.hardware[0]) &&
       (TMR_SR_MODEL_M6E_NANO != sr->versionInfo.hardware[0]) &&
-      (TMR_SR_MODEL_M6E_PRC != sr->versionInfo.hardware[0]))
+      (TMR_SR_MODEL_M6E_I != sr->versionInfo.hardware[0]))
   {
     /* Do this only if the module is other than M6e*/
     boolval = true;
@@ -498,7 +517,7 @@ TMR_SR_boot(TMR_Reader *reader, uint32_t currentBaudRate)
   if ((TMR_SR_MODEL_M6E != sr->versionInfo.hardware[0]) &&
       (TMR_SR_MODEL_MICRO != sr->versionInfo.hardware[0]) &&
       (TMR_SR_MODEL_M6E_NANO !=  sr->versionInfo.hardware[0]) &&
-      (TMR_SR_MODEL_M6E_PRC != sr->versionInfo.hardware[0]))
+      (TMR_SR_MODEL_M6E_I != sr->versionInfo.hardware[0]))
   {
     /* Do this only if the module is other than M6e*/
     boolval = true;
@@ -681,6 +700,7 @@ TMR_Status
 TMR_SR_destroy(TMR_Reader *reader)
 {
   TMR_SR_SerialTransport *transport;
+  reader->hasContinuousReadStarted = false;
 
   transport = &reader->u.serialReader.transport;
 
@@ -1038,7 +1058,7 @@ TMR_SR_read_internal(struct TMR_Reader *reader, uint32_t timeoutMs,
          (rp->u.multi.plans[0]->type == TMR_READ_PLAN_TYPE_SIMPLE) &&
          (compareAntennas(&rp->u.multi)) &&
          ((TMR_SR_MODEL_M6E == sr->versionInfo.hardware[0]) ||
-          (TMR_SR_MODEL_M6E_PRC == sr->versionInfo.hardware[0]) ||
+          (TMR_SR_MODEL_M6E_I == sr->versionInfo.hardware[0]) ||
           (TMR_SR_MODEL_M6E_NANO == sr->versionInfo.hardware[0]) ||
           (TMR_SR_MODEL_MICRO == sr->versionInfo.hardware[0])))
         || (true == reader->continuousReading)
@@ -1079,7 +1099,7 @@ TMR_SR_read_internal(struct TMR_Reader *reader, uint32_t timeoutMs,
 
       ret = TMR_SR_cmdMultipleProtocolSearch(reader, 
           TMR_SR_OPCODE_READ_TAG_ID_MULTIPLE,
-          protocolList, TMR_TRD_METADATA_FLAG_ALL,
+		  protocolList, reader->userMetadataFlag,
           antennas,
           filters,
           (uint16_t)timeoutMs, &count);
@@ -1213,7 +1233,7 @@ TMR_SR_read_internal(struct TMR_Reader *reader, uint32_t timeoutMs,
         antennaList = &(rp->u.simple.antennas);
         ret = TMR_SR_cmdMultipleProtocolSearch(reader,
                             TMR_SR_OPCODE_READ_TAG_ID_MULTIPLE,
-                            protocolList, TMR_TRD_METADATA_FLAG_ALL,
+                            protocolList, reader->userMetadataFlag,
                             antennas,
                             filters,
                             (uint16_t)timeoutMs, &count);
@@ -1421,7 +1441,14 @@ TMR_SR_read(struct TMR_Reader *reader, uint32_t timeoutMs, int32_t *tagCount)
     *tagCount = 0;
   }
   
-  return TMR_SR_read_internal(reader, timeoutMs, tagCount, rp);
+  ret = TMR_SR_read_internal(reader, timeoutMs, tagCount, rp);
+  if (ret != TMR_SUCCESS)
+  {
+	  return ret;
+  }
+  if (reader->continuousReading)
+	reader->hasContinuousReadStarted = true;
+  return ret;
 }
 
 TMR_Status
@@ -1431,6 +1458,7 @@ verifySearchStatus(TMR_Reader *reader)
   TMR_Status ret;
   uint8_t *msg;
   uint32_t timeoutMs;
+  bool crcEnable;
 
   sr = &reader->u.serialReader;
   msg = sr->bufResponse;
@@ -1452,7 +1480,19 @@ verifySearchStatus(TMR_Reader *reader)
          * Module has already pushed all the tagreads before
          * sending this response. i.e., reading is finished
          **/
-        reader->u.serialReader.crcEnabled = true;
+		if (TMR_SR_MSG_SOURCE_USB == reader->u.serialReader.transportType)
+		{
+		  crcEnable = false;
+		  ret = TMR_SR_cmdSetReaderConfiguration(reader, TMR_SR_CONFIGURATION_SEND_CRC, &crcEnable);
+		  if (TMR_SUCCESS == ret)
+			reader->u.serialReader.crcEnabled = false;
+		  else
+			reader->u.serialReader.crcEnabled = true;
+		}
+		else
+		{
+			reader->u.serialReader.crcEnabled = true;
+		}
         return TMR_SUCCESS;
       }
       else if ((0x2F == msg[2]) && (0x01 == msg[3] && (0x00 == msg[4])))
@@ -1494,7 +1534,7 @@ TMR_SR_hasMoreTags(struct TMR_Reader *reader)
 
   sr = &reader->u.serialReader;
 
-#ifdef TMR_ENABLE_BACKGROUND_READS
+//#ifdef TMR_ENABLE_BACKGROUND_READS
   if ((reader->continuousReading) && (0 == sr->tagsRemainingInBuffer))
   {
     uint8_t *msg;
@@ -1528,14 +1568,19 @@ TMR_SR_hasMoreTags(struct TMR_Reader *reader)
       TMR_SR_postprocessReaderSpecificMetadata(&trd, sr);
       trd.reader = reader;
 
+#ifndef BARE_METAL
       // printf("Parsed 0604 TagReadData: readCount=%d rssi=%d ant=%d, freq=%d, t_hi=%X, t_lo=%X\n", 
       //trd.readCount, trd.rssi, trd.antenna, trd.frequency, trd.timestampHigh, trd.timestampLow, trd.phase);
       {
         notify_authreq_listeners(reader, &trd, &tauth);		
       }
+#endif
 
       /* TODO: Factor out password generation into callback */
+	  reader->hasContinuousReadStarted = false;
       ret = TMR_SR_cmdAuthReqResponse(reader, &tauth);
+	  if (reader->continuousReading)
+		reader->hasContinuousReadStarted = true;
       if (TMR_SUCCESS != ret)
       {
         return ret;
@@ -1549,10 +1594,12 @@ TMR_SR_hasMoreTags(struct TMR_Reader *reader)
     if ((TMR_SUCCESS != ret) && (TMR_ERROR_TAG_ID_BUFFER_FULL != ret)
         && ((TMR_ERROR_NO_TAGS_FOUND != ret)
         || ((TMR_ERROR_NO_TAGS_FOUND == ret) && (0 == msg[1]))))
-        
     {
-      reader->u.serialReader.isBasetimeUpdated = false;
-      return ret;
+		if (msg[5] != 0x04 || msg[2] != 0x2f)
+		{
+			reader->u.serialReader.isBasetimeUpdated = false;
+			return ret;
+		}
     }
 
     ret = (0 == GETU16AT(msg, 3)) ? TMR_SUCCESS : TMR_ERROR_CODE(GETU16AT(msg, 3));
@@ -1593,6 +1640,11 @@ TMR_SR_hasMoreTags(struct TMR_Reader *reader)
          **/		
         return TMR_ERROR_TAG_ID_BUFFER_AUTH_REQUEST;		
       }
+	  else if (0x04 == msg[5])
+	  {
+		  memcpy(&reader->paramMessage[0], msg, (msg[1] + 5) * sizeof(uint8_t));
+		  reader->paramWait = false;
+	  }
       /**
        * Control comes here in case of the response received
        * for start continuous reading command. (0x2F with type 0x01)
@@ -1655,7 +1707,7 @@ TMR_SR_hasMoreTags(struct TMR_Reader *reader)
     }
   }
   else
-#endif
+//#endif
   {
     /**
      * TMR_SR_hasMoreTags control comes here only in case of sync reading
@@ -1708,7 +1760,7 @@ TMR_SR_getNextTag(struct TMR_Reader *reader, TMR_TagReadData *read)
         {
           i = 2;
           SETU8(msg, i, TMR_SR_OPCODE_GET_TAG_ID_BUFFER);
-          SETU16(msg, i, TMR_TRD_METADATA_FLAG_ALL);
+          SETU16(msg, i, reader->userMetadataFlag);
           SETU8(msg, i, 0); /* read options */
           msg[1] = i-3; /* Install length */
           ret = TMR_SR_send(reader, msg);
@@ -1926,7 +1978,7 @@ TMR_SR_modifyFlash(TMR_Reader *reader, uint8_t sector, uint32_t address,
   if ((TMR_SR_MODEL_M6E == reader->u.serialReader.versionInfo.hardware[0])||
       (TMR_SR_MODEL_MICRO == reader->u.serialReader.versionInfo.hardware[0]) ||
       (TMR_SR_MODEL_M6E_NANO == reader->u.serialReader.versionInfo.hardware[0]) ||
-      (TMR_SR_MODEL_M6E_PRC == reader->u.serialReader.versionInfo.hardware[0]))
+      (TMR_SR_MODEL_M6E_I == reader->u.serialReader.versionInfo.hardware[0]))
   {
     return TMR_SR_cmdModifyFlashSector(reader, sector, address, password, length,
                                        data, offset);
@@ -2701,7 +2753,7 @@ TMR_SR_paramSet(struct TMR_Reader *reader, TMR_Param key, const void *value)
     if ((TMR_SR_MODEL_M6E == sr->versionInfo.hardware[0]) || 
         (TMR_SR_MODEL_MICRO == sr->versionInfo.hardware[0]) ||
         (TMR_SR_MODEL_M6E_NANO == sr->versionInfo.hardware[0]) ||
-        (TMR_SR_MODEL_M6E_PRC == sr->versionInfo.hardware[0]))
+        (TMR_SR_MODEL_M6E_I == sr->versionInfo.hardware[0]))
     {
       ret = TMR_SR_cmdSetReaderConfiguration(reader, TMR_SR_CONFIGURATION_UNIQUE_BY_PROTOCOL, value);
     }
@@ -2715,7 +2767,7 @@ TMR_SR_paramSet(struct TMR_Reader *reader, TMR_Param key, const void *value)
     if ((TMR_SR_MODEL_M6E == sr->versionInfo.hardware[0]) || 
         (TMR_SR_MODEL_MICRO == sr->versionInfo.hardware[0]) ||
         (TMR_SR_MODEL_M6E_NANO == sr->versionInfo.hardware[0]) ||
-        (TMR_SR_MODEL_M6E_PRC == sr->versionInfo.hardware[0]))
+        (TMR_SR_MODEL_M6E_I == sr->versionInfo.hardware[0]))
     {
       int32_t timeout = (TMR_DEFAULT_READ_FILTER_TIMEOUT == *(int32_t *)value) ? 0 : *(int32_t *)value;
       ret = TMR_SR_cmdSetReaderConfiguration(reader, TMR_SR_CONFIGURATION_READ_FILTER_TIMEOUT, &timeout);
@@ -2732,7 +2784,7 @@ TMR_SR_paramSet(struct TMR_Reader *reader, TMR_Param key, const void *value)
 
   case TMR_PARAM_TAGREADDATA_ENABLEREADFILTER:
     if ((TMR_SR_MODEL_M6E == sr->versionInfo.hardware[0]) || (TMR_SR_MODEL_MICRO == sr->versionInfo.hardware[0]) ||
-      (TMR_SR_MODEL_M6E_NANO == sr->versionInfo.hardware[0]) ||(TMR_SR_MODEL_M6E_PRC == sr->versionInfo.hardware[0]))
+      (TMR_SR_MODEL_M6E_NANO == sr->versionInfo.hardware[0]) ||(TMR_SR_MODEL_M6E_I == sr->versionInfo.hardware[0]))
     {
       ret = TMR_SR_cmdSetReaderConfiguration(reader, TMR_SR_CONFIGURATION_ENABLE_READ_FILTER, value);
       if (TMR_SUCCESS == ret)
@@ -2787,19 +2839,18 @@ TMR_SR_paramSet(struct TMR_Reader *reader, TMR_Param key, const void *value)
 
   case TMR_PARAM_ANTENNA_PORTSWITCHGPOS:
   {
-    uint8_t portmask;
     const TMR_uint8List *u8list;
     uint16_t i;
 
     u8list = value;
-    portmask = 0;
+    reader->portmask = 0;
     for (i = 0 ; i < u8list->len && i < u8list->max ; i++)
     {
-      portmask |= 1 << (u8list->list[i] - 1);
+      reader->portmask |= 1 << (u8list->list[i] - 1);
     }
     
     ret = TMR_SR_cmdSetReaderConfiguration(
-      reader, TMR_SR_CONFIGURATION_ANTENNA_CONTROL_GPIO, &portmask);
+    reader, TMR_SR_CONFIGURATION_ANTENNA_CONTROL_GPIO, &reader->portmask);
 
     if (TMR_SUCCESS != ret)
     {
@@ -2984,7 +3035,7 @@ TMR_SR_paramSet(struct TMR_Reader *reader, TMR_Param key, const void *value)
   case TMR_PARAM_GPIO_INPUTLIST:
   case TMR_PARAM_GPIO_OUTPUTLIST:
   if ((TMR_SR_MODEL_M6E == sr->versionInfo.hardware[0]) ||
-      (TMR_SR_MODEL_M6E_PRC == sr->versionInfo.hardware[0]) ||
+      (TMR_SR_MODEL_M6E_I == sr->versionInfo.hardware[0]) ||
       (TMR_SR_MODEL_M6E_NANO == sr->versionInfo.hardware[0]) ||
       (TMR_SR_MODEL_MICRO == sr->versionInfo.hardware[0]))
   {
@@ -3039,6 +3090,7 @@ TMR_SR_paramSet(struct TMR_Reader *reader, TMR_Param key, const void *value)
   case TMR_PARAM_VERSION_MODEL:
   case TMR_PARAM_VERSION_SOFTWARE:
   case TMR_PARAM_ANTENNA_RETURNLOSS:
+  case TMR_PARAM_GEN2_PROTOCOLEXTENSION:
     ret = TMR_ERROR_READONLY;
     break;
 
@@ -3238,7 +3290,15 @@ TMR_SR_paramSet(struct TMR_Reader *reader, TMR_Param key, const void *value)
       /* set the vakue */
       ret = TMR_SR_cmdSetReaderWriteTimeOut (reader,protokey.protocol, &timeout);
       break;
-    }    
+    }
+  case TMR_PARAM_METADATAFLAG:
+	  {
+		if (*(TMR_TRD_MetadataFlag *)value & TMR_TRD_METADATA_FLAG_PROTOCOL)
+			reader->userMetadataFlag = *(TMR_TRD_MetadataFlag *)value;
+		else
+			ret = TMR_ERROR_MSG_INVALID_PARAMETER_VALUE;
+		break;
+	  }
 
   default:
     ret = TMR_ERROR_NOT_FOUND;
@@ -3261,7 +3321,7 @@ TMR_SR_paramSet(struct TMR_Reader *reader, TMR_Param key, const void *value)
       if ((TMR_SR_MODEL_M6E == reader->u.serialReader.versionInfo.hardware[0])||
           (TMR_SR_MODEL_MICRO == reader->u.serialReader.versionInfo.hardware[0])||
           (TMR_SR_MODEL_M6E_NANO == reader->u.serialReader.versionInfo.hardware[0])||
-          (TMR_SR_MODEL_M6E_PRC == reader->u.serialReader.versionInfo.hardware[0]))
+          (TMR_SR_MODEL_M6E_I == reader->u.serialReader.versionInfo.hardware[0]))
       {
         ret = TMR_ERROR_UNSUPPORTED;
       }
@@ -3457,7 +3517,7 @@ TMR_SR_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
   if ((TMR_SR_MODEL_M6E == sr->versionInfo.hardware[0]) || 
       (TMR_SR_MODEL_MICRO == sr->versionInfo.hardware[0]) ||
       (TMR_SR_MODEL_M6E_NANO == sr->versionInfo.hardware[0]) ||
-      (TMR_SR_MODEL_M6E_PRC == sr->versionInfo.hardware[0]))
+      (TMR_SR_MODEL_M6E_I == sr->versionInfo.hardware[0]))
   {
     *(int32_t *)value = sr->readFilterTimeout;
   }
@@ -3532,7 +3592,7 @@ TMR_SR_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
     if ((TMR_SR_MODEL_M6E == sr->versionInfo.hardware[0]) || 
         (TMR_SR_MODEL_MICRO == sr->versionInfo.hardware[0]) ||
         (TMR_SR_MODEL_M6E_NANO == sr->versionInfo.hardware[0]) ||
-        (TMR_SR_MODEL_M6E_PRC == sr->versionInfo.hardware[0]))
+        (TMR_SR_MODEL_M6E_I == sr->versionInfo.hardware[0]))
     {
       ret = TMR_SR_cmdGetReaderConfiguration(reader, TMR_SR_CONFIGURATION_UNIQUE_BY_PROTOCOL, value);
     }
@@ -3562,25 +3622,27 @@ TMR_SR_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
 
   case TMR_PARAM_ANTENNA_PORTSWITCHGPOS:
   {
-    uint8_t portmask;
     TMR_uint8List *u8list;
-
     u8list = value;
 
     ret = TMR_SR_cmdGetReaderConfiguration(
-      reader, TMR_SR_CONFIGURATION_ANTENNA_CONTROL_GPIO, &portmask);
+	reader, TMR_SR_CONFIGURATION_ANTENNA_CONTROL_GPIO, &reader->portmask);
     if (TMR_SUCCESS != ret)
     {
       break;
     }
     u8list->len = 0;
-    if (portmask & 1)
+    if (reader->portmask & 1)
     {
       LISTAPPEND(u8list, 1);
     }
-    if (portmask & 2)
+    if (reader->portmask & 2)
     {
       LISTAPPEND(u8list, 2);
+    }
+	if (reader->portmask & 3)
+    {
+      LISTAPPEND(u8list, 3);
     }
     break;
   }
@@ -3635,7 +3697,7 @@ TMR_SR_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
 
     u8list->len = 0;
     if ((TMR_SR_MODEL_M6E == sr->versionInfo.hardware[0]) ||
-        (TMR_SR_MODEL_M6E_PRC == sr->versionInfo.hardware[0]) ||
+        (TMR_SR_MODEL_M6E_I == sr->versionInfo.hardware[0]) ||
         (TMR_SR_MODEL_M6E_NANO == sr->versionInfo.hardware[0]) ||
         (TMR_SR_MODEL_MICRO == sr->versionInfo.hardware[0]))
     {
@@ -3847,6 +3909,10 @@ TMR_SR_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
     *(TMR_GEN2_WriteMode *)value = sr->writeMode;
     break;
 
+  case TMR_PARAM_GEN2_PROTOCOLEXTENSION:
+	protokey.u.gen2 = TMR_SR_GEN2_CONFIGURATION_PROTCOLEXTENSION;
+    break;
+
 #ifdef TMR_ENABLE_ISO180006B
   case TMR_PARAM_ISO180006B_BLF:
     protokey.protocol = TMR_TAG_PROTOCOL_ISO180006B;
@@ -3933,6 +3999,24 @@ TMR_SR_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
     case TMR_SR_MODEL_M6E:
       model = "M6e";
       break;
+  case TMR_SR_MODEL_M6E_I:
+	{
+		/**
+		* M6e I has following variants
+		**/
+		switch (sr->versionInfo.hardware[3])
+		{
+		case TMR_SR_MODEL_M6E_I_PRC:
+			model = "M6e PRC";
+			break;
+		case TMR_SR_MODEL_M6E_I_JIC:
+			model = "M6e JIC";
+			break;
+		default:
+			model = "Unknown";
+		}
+	}
+	break;
     case TMR_SR_MODEL_MICRO:
       {
         /**
@@ -3955,10 +4039,7 @@ TMR_SR_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
     case TMR_SR_MODEL_M6E_NANO:
       model = "M6e Nano";
       break;
-    case TMR_SR_MODEL_M6E_PRC:
-      model = "M6e PRC";
-      break;
-    default:
+	default:
       model = "Unknown";
     }
     TMR_stringCopy(value, model, (int)strlen(model));
@@ -4095,6 +4176,11 @@ TMR_SR_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
       }
     }
     break;
+  case TMR_PARAM_METADATAFLAG:
+	  {
+		*(uint16_t *)value = reader->userMetadataFlag;
+		break;
+	  }
 		    
   default:
     ret = TMR_ERROR_NOT_FOUND;
@@ -4117,7 +4203,7 @@ TMR_SR_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
   case TMR_PARAM_EXTENDEDEPC:
     {
       if ((TMR_SR_MODEL_M6E == sr->versionInfo.hardware[0]) ||
-          (TMR_SR_MODEL_M6E_PRC == sr->versionInfo.hardware[0]) ||
+          (TMR_SR_MODEL_M6E_I == sr->versionInfo.hardware[0]) ||
           (TMR_SR_MODEL_M6E_NANO == sr->versionInfo.hardware[0]) ||
           (TMR_SR_MODEL_MICRO == sr->versionInfo.hardware[0]))
       {
@@ -4137,6 +4223,7 @@ TMR_SR_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
   case TMR_PARAM_GEN2_BLF:
   case TMR_PARAM_GEN2_TARI:
   case TMR_PARAM_GEN2_BAP:
+  case TMR_PARAM_GEN2_PROTOCOLEXTENSION:
 #ifdef TMR_ENABLE_ISO180006B
   case TMR_PARAM_ISO180006B_BLF:
   case TMR_PARAM_ISO180006B_MODULATION_DEPTH:
@@ -4189,8 +4276,8 @@ TMR_SR_SerialReader_init(TMR_Reader *reader)
   reader->modifyFlash = TMR_SR_modifyFlash;
   reader->reboot = TMR_SR_reboot;
 #endif
-#ifdef TMR_ENABLE_BACKGROUND_READS
   reader->cmdStopReading = TMR_SR_cmdStopReading;
+#ifdef TMR_ENABLE_BACKGROUND_READS
   reader->cmdAutonomousReading = TMR_SR_receiveAutonomousReading;
 #endif
 
@@ -4421,7 +4508,8 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
       return TMR_SR_cmdBlockErase(reader, (uint16_t)sr->commandTimeout, op.bank, op.wordPtr,
                                                 op.wordCount, sr->gen2AccessPassword, filter);
     }
-
+	
+#ifdef TMR_ENABLE_GEN2_CUSTOM_TAGOPS
   case (TMR_TAGOP_GEN2_ALIEN_HIGGS2_PARTIALLOADIMAGE):
     {
       TMR_TagOp_GEN2_Alien_Higgs2_PartialLoadImage op;
@@ -5284,6 +5372,8 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
       return TMR_SR_cmdIAVDenatranCustomOp(reader, (uint16_t)sr->commandTimeout,
           sr->gen2AccessPassword, op.mode, op.payload, data, filter);
     }
+#endif /* TMR_ENABLE_GEN2_CUSTOM_TAGOPS */
+
 #ifdef TMR_ENABLE_ISO180006B
   case (TMR_TAGOP_ISO180006B_READDATA):
     {
@@ -5530,6 +5620,8 @@ TMR_SR_addTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop,TMR_ReadPlan *rp, ui
         TMR_SR_msgAddGEN2BlockErase(msg, &i, 0, args->wordPtr, args->bank, args->wordCount, 0, NULL);
         break;
       }
+	  
+#ifdef TMR_ENABLE_GEN2_CUSTOM_TAGOPS
     case TMR_TAGOP_GEN2_ALIEN_HIGGS2_PARTIALLOADIMAGE:
       {
         TMR_TagOp_GEN2_Alien_Higgs2_PartialLoadImage *args;
@@ -6049,6 +6141,7 @@ TMR_SR_addTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop,TMR_ReadPlan *rp, ui
         TMR_SR_msgAddIAVDenatranCustomOp(msg, &i, 0, 0, args->mode, args->payload, NULL);
         break;
       }
+#endif /* TMR_ENABLE_GEN2_CUSTOM_TAGOPS */
     case TMR_TAGOP_LIST:
       return TMR_ERROR_UNIMPLEMENTED; /* Module doesn't implement these */
     default:

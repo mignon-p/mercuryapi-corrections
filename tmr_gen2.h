@@ -104,15 +104,19 @@ typedef struct TMR_GEN2_DENATRAN_IAV_WriteSecCredentials
 typedef enum TMR_GEN2_Bank
 {
   /** Reserved bank (kill and access passwords) */
-  TMR_GEN2_BANK_RESERVED  = 0,
+  TMR_GEN2_BANK_RESERVED  = 0x0,
   /** EPC memory bank */
-  TMR_GEN2_BANK_EPC       = 1,
+  TMR_GEN2_BANK_EPC       = 0x1,
   /** TID memory bank */
-  TMR_GEN2_BANK_TID       = 2,
+  TMR_GEN2_BANK_TID       = 0x2,
   /** User memory bank */
-  TMR_GEN2_BANK_USER      = 3,
+  TMR_GEN2_BANK_USER      = 0x3,
   /** Used to enable the read of additional membanks - reserved mem bank */
   TMR_GEN2_BANK_RESERVED_ENABLED = 0x4,
+  /** Used to Filter Gen2 Tag with specified EPC length */
+  TMR_GEN2_EPC_LENGTH_FILTER = 0x6,
+  /** Gen2 Truncate Option */
+  TMR_GEN2_EPC_TRUNCATE = 0x7,
   /** Used to enable the read of additional membanks - epc mem bank */
   TMR_GEN2_BANK_EPC_ENABLED = 0x8,
   /** Used to enable the read of additional membanks - tid mem bank */
@@ -218,6 +222,13 @@ typedef enum TMR_GEN2_LinkFrequency
   TMR_GEN2_LINKFREQUENCY_MAX     = 640,
   TMR_GEN2_LINKFREQUENCY_INVALID = TMR_GEN2_LINKFREQUENCY_MAX + 1,
 } TMR_GEN2_LinkFrequency;
+
+/** Gen2 Protcol Extension parameters */
+typedef enum TMR_GEN2_ProtocolExtension
+{
+  TMR_GEN2_PROTOCOLEXTENSION_LICENSE_NONE			= 0,
+  TMR_GEN2_PROTOCOLEXTENSION_LICENSE_IAV_DENATRAN	= 1
+}TMR_GEN2_ProtocolExtension;
 
 /** Gen2 bap parameters */
 typedef struct TMR_GEN2_Bap

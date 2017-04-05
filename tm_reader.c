@@ -145,6 +145,9 @@ TMR_create(TMR_Reader *reader, const char* deviceUri)
   reader->backgroundSetup = false;
   reader->parserSetup = false;
 #endif
+  reader->dutyCycle = false;
+  reader->paramWait = false;
+  reader->hasContinuousReadStarted = false;
 
 #ifdef TMR_ENABLE_SERIAL_READER
 #ifdef TMR_ENABLE_SERIAL_TRANSPORT_NATIVE
@@ -330,11 +333,14 @@ TMR_reader_init_internal(struct TMR_Reader *reader)
   reader->streamStats = TMR_SR_STATUS_NONE;
   reader->finishedReading = true;
 #endif
+  reader->continuousReading = false;
   reader->searchStatus = false;
   reader->fastSearch = false;
   reader->backgroundThreadCancel = false;
   reader->isStopNTags = false;
   reader->numberOfTagsToRead = 0;
+  reader->userMetadataFlag = TMR_TRD_METADATA_FLAG_ALL;
+  reader->portmask = 0;
 
   return TMR_SUCCESS;
 }
@@ -1679,6 +1685,9 @@ TMR_TagOp_init_GEN2_BlockErase(TMR_TagOp *tagop, TMR_GEN2_Bank bank, uint32_t wo
  * @param accessPassword access password
  * @param epc EPC to write
  */
+
+#ifdef TMR_ENABLE_GEN2_CUSTOM_TAGOPS
+
 TMR_Status 
 TMR_TagOp_init_GEN2_Alien_Higgs2_PartialLoadImage(TMR_TagOp *tagop, TMR_GEN2_Password killPassword,
                                        TMR_GEN2_Password accessPassword, TMR_TagData *epc)
@@ -2733,11 +2742,12 @@ TMR_TagOp_init_GEN2_IDS_SL900A_StartLog(TMR_TagOp *tagop, TMR_GEN2_Password acce
     /** in case user not providing the time stamp
     * use current system time
     */
-    *timestamp = tmr_gettimestructure();
+    return TMR_ERROR_TIMESTAMP_NULL;
   }
-
-  tagop->u.gen2.u.custom.u.ids.u.startLog.startTime |= (uint32_t)((timestamp->tm_year - (2010 - 1900)) << 26);
-  tagop->u.gen2.u.custom.u.ids.u.startLog.startTime |= (uint32_t)((timestamp->tm_mon + 1) << 22);
+  
+  tagop->u.gen2.u.custom.u.ids.u.startLog.startTime = 0;
+  tagop->u.gen2.u.custom.u.ids.u.startLog.startTime |= (uint32_t)((timestamp->tm_year - 2010) << 26);
+  tagop->u.gen2.u.custom.u.ids.u.startLog.startTime |= (uint32_t)((timestamp->tm_mon) << 22);
   tagop->u.gen2.u.custom.u.ids.u.startLog.startTime |= (uint32_t)(timestamp->tm_mday << 17);
   tagop->u.gen2.u.custom.u.ids.u.startLog.startTime |= (uint32_t)(timestamp->tm_hour << 12);
   tagop->u.gen2.u.custom.u.ids.u.startLog.startTime |= (uint32_t)(timestamp->tm_min << 6);
@@ -3515,6 +3525,7 @@ TMR_init_GEN2_IDS_SL900A_MeasurementSetupData(TMR_uint8List *reply, TMR_TagOp_GE
   return TMR_SUCCESS;
 }
 
+#endif /* TMR_ENABLE_GEN2_CUSTOM_TAGOPS  */
 void
 TMR_paramProbe(struct TMR_Reader *reader, TMR_Param key)
 {

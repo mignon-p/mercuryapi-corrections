@@ -87,7 +87,7 @@ tmr_gettimestructure()
   now = (time_t)(temp/1000);
   timestamp = localtime(&now);
 
-  timestructure.tm_year = (uint32_t)(1990 + timestamp->tm_year);
+  timestructure.tm_year = (uint32_t)(1900 + timestamp->tm_year);
   timestructure.tm_mon = (uint32_t)(1 + timestamp->tm_mon);
   timestructure.tm_mday = (uint32_t)timestamp->tm_mday;
   timestructure.tm_hour = (uint32_t)timestamp->tm_hour;

@@ -93,6 +93,8 @@ typedef enum TMR_Param
   TMR_PARAM_GEN2_WRITEMODE,
   /** "/reader/gen2/bap", TMR_Gen2_Bap */
   TMR_PARAM_GEN2_BAP,
+  /** "/reader/gen2/protocolExtension", TMR_PARAM_GEN2_PROTOCOLEXTENSION */
+  TMR_PARAM_GEN2_PROTOCOLEXTENSION,
   /** "/reader/iso180006b/BLF", TMR_ISO180006B_LinkFrequency */
   TMR_PARAM_ISO180006B_BLF,
   /** "/reader/iso180006b/modulationDepth", TMR_ISO180006B_ModulationDepth */
@@ -203,6 +205,9 @@ typedef enum TMR_Param
   TMR_PARAM_READER_STATS_ENABLE,
   /** "/reader/trigger/read/Gpi", TMR_uint8List */
   TMR_PARAM_TRIGGER_READ_GPI,
+  /** "/reader/metadataflags", TMR_TRD_MetadataFlag*/
+  TMR_PARAM_METADATAFLAG,
+  TMR_PARAM_LICENSED_FEATURES,
   TMR_PARAM_END,
   TMR_PARAM_MAX = TMR_PARAM_END-1,
 
