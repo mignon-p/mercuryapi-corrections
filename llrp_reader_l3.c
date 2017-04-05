@@ -9516,7 +9516,7 @@ TMR_LLRP_verifyOpSpecResultStatus(TMR_Reader *reader,
 
           case LLRP_C1G2ReadResultType_Memory_Locked_Error:
             {
-              ret = TMR_ERROR_GEN2_PROCOCOL_MEMORY_LOCKED;
+              ret = TMR_ERROR_GEN2_PROTOCOL_MEMORY_LOCKED;
               break;
             }
 
@@ -9550,7 +9550,7 @@ TMR_LLRP_verifyOpSpecResultStatus(TMR_Reader *reader,
 
           case LLRP_C1G2WriteResultType_Tag_Memory_Locked_Error:
             {
-              ret = TMR_ERROR_GEN2_PROCOCOL_MEMORY_LOCKED;
+              ret = TMR_ERROR_GEN2_PROTOCOL_MEMORY_LOCKED;
               break;
             }
 
@@ -9706,7 +9706,7 @@ TMR_LLRP_verifyOpSpecResultStatus(TMR_Reader *reader,
 
           case LLRP_C1G2BlockEraseResultType_Tag_Memory_Locked_Error:
             {
-              ret = TMR_ERROR_GEN2_PROCOCOL_MEMORY_LOCKED;
+              ret = TMR_ERROR_GEN2_PROTOCOL_MEMORY_LOCKED;
               break;
             }
 
@@ -9764,7 +9764,7 @@ TMR_LLRP_verifyOpSpecResultStatus(TMR_Reader *reader,
 
           case LLRP_C1G2BlockWriteResultType_Tag_Memory_Locked_Error:
             {
-              ret = TMR_ERROR_GEN2_PROCOCOL_MEMORY_LOCKED;
+              ret = TMR_ERROR_GEN2_PROTOCOL_MEMORY_LOCKED;
               break;
             }
 
