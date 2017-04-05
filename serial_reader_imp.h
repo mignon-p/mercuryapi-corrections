@@ -467,7 +467,7 @@ typedef struct TMR_SR_Gen2ReaderWriteTimeOut
   /* Status of reader timeout */
   bool earlyexit;
 
-  /* Timeout value used for write opearation */
+  /* Timeout value used for write operation */
   uint16_t writetimeout;
 }TMR_SR_Gen2ReaderWriteTimeOut;
 /**
@@ -677,11 +677,11 @@ TMR_Status TMR_SR_cmdSL900aGetBatteryLevel(TMR_Reader *reader, uint16_t timeout,
                                            uint8_t CommandCode, uint32_t password, PasswordLevel level,BatteryType type,
                                            TMR_uint8List *data, TMR_TagFilter* target);
 TMR_Status TMR_SR_cmdSL900aAccessFifoStatus(TMR_Reader *reader, uint16_t timeout, TMR_GEN2_Password accessPassword, uint8_t CommandCode,
-           uint32_t password, PasswordLevel level, AccessFifoOperation opearation, TMR_uint8List * data, TMR_TagFilter* target);
+           uint32_t password, PasswordLevel level, AccessFifoOperation operation, TMR_uint8List * data, TMR_TagFilter* target);
 TMR_Status TMR_SR_cmdSL900aAccessFifoRead(TMR_Reader *reader, uint16_t timeout, TMR_GEN2_Password accessPassword, uint8_t CommandCode,
-            uint32_t password, PasswordLevel level, AccessFifoOperation opearation, uint8_t length,TMR_uint8List * data, TMR_TagFilter* target);
+            uint32_t password, PasswordLevel level, AccessFifoOperation operation, uint8_t length,TMR_uint8List * data, TMR_TagFilter* target);
 TMR_Status TMR_SR_cmdSL900aAccessFifoWrite(TMR_Reader *reader, uint16_t timeout, TMR_GEN2_Password accessPassword, uint8_t CommandCode,
-           uint32_t password, PasswordLevel level, AccessFifoOperation opearation, TMR_uint8List *payLoad, TMR_uint8List * data, TMR_TagFilter* target);
+           uint32_t password, PasswordLevel level, AccessFifoOperation operation, TMR_uint8List *payLoad, TMR_uint8List * data, TMR_TagFilter* target);
 TMR_Status TMR_SR_cmdHibikiReadLock(TMR_Reader *reader, uint16_t timeout,
             TMR_GEN2_Password accessPassword, uint16_t mask, uint16_t action);
 TMR_Status TMR_SR_cmdHibikiGetSystemInformation(TMR_Reader *reader, uint16_t timeout,
@@ -945,7 +945,7 @@ TMR_SR_msgAddIdsSL900aSetPassword(uint8_t *msg, uint8_t *i, uint16_t timeout, TM
                                   PasswordLevel newPasswordLevel, TMR_TagFilter* target);
 void 
 TMR_SR_msgAddIdsSL900aAccessFifoStatus(uint8_t *msg, uint8_t *i, uint16_t timeout, TMR_GEN2_Password accessPassword,
-                                  uint8_t CommandCode, uint32_t password, PasswordLevel level, AccessFifoOperation opearation,
+                                  uint8_t CommandCode, uint32_t password, PasswordLevel level, AccessFifoOperation operation,
                                   TMR_TagFilter* target);
 void 
 TMR_SR_msgAddIdsSL900aGetBatteryLevel(uint8_t *msg, uint8_t *i, uint16_t timeout, TMR_GEN2_Password accessPassword,
@@ -953,11 +953,11 @@ TMR_SR_msgAddIdsSL900aGetBatteryLevel(uint8_t *msg, uint8_t *i, uint16_t timeout
                                       TMR_TagFilter* target);
 void 
 TMR_SR_msgAddIdsSL900aAccessFifoRead(uint8_t *msg, uint8_t *i, uint16_t timeout, TMR_GEN2_Password accessPassword,
-                                  uint8_t CommandCode, uint32_t password, PasswordLevel level, AccessFifoOperation opearation,
+                                  uint8_t CommandCode, uint32_t password, PasswordLevel level, AccessFifoOperation operation,
                                   uint8_t length, TMR_TagFilter* target);
 void 
 TMR_SR_msgAddIdsSL900aAccessFifoWrite(uint8_t *msg, uint8_t *i, uint16_t timeout, TMR_GEN2_Password accessPassword,
-                                  uint8_t CommandCode, uint32_t password, PasswordLevel level, AccessFifoOperation opearation,
+                                  uint8_t CommandCode, uint32_t password, PasswordLevel level, AccessFifoOperation operation,
                                   TMR_uint8List *payLoad, TMR_TagFilter* target);
 void 
 TMR_SR_msgAddIdsSL900aStartLog(uint8_t *msg, uint8_t *i, uint16_t timeout, TMR_GEN2_Password accessPassword,

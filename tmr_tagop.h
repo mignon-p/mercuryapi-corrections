@@ -363,7 +363,7 @@ typedef struct SecurePasswordLookup
 
 typedef struct TMR_TagOp_GEN2_SecureReadData
 {
-  /** Gen2 read opearation */
+  /** Gen2 read operation */
   TMR_TagOp_GEN2_ReadData readData;
 
   /** type of Gen2 Secure operation*/
@@ -1291,7 +1291,7 @@ typedef struct TMR_TagOp_GEN2_IDS_SL900A_Initialize
   Delay delayTime;
 }TMR_TagOp_GEN2_IDS_SL900A_Initialize;
 
-/** Sub-Class for specifying AccessFifo opearation */
+/** Sub-Class for specifying AccessFifo operation */
 typedef enum AccessFifoOperation
 {
   /* Read from FIFO */
@@ -1312,7 +1312,7 @@ typedef struct TMR_TagOp_GEN2_IDS_SL900A_AccessFifo
   uint32_t AccessPassword;
   /* IDS SL900A Password */
   uint32_t Password;
-  /* specify the opearationn do be done on fifo */
+  /* specify the operation do be done on fifo */
   AccessFifoOperation operation;
 }TMR_TagOp_GEN2_IDS_SL900A_AccessFifo;
 

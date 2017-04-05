@@ -183,7 +183,7 @@ TMR_strerr(TMR_Reader *reader, TMR_Status status)
 	case TMR_ERROR_GEN2_PROTOCOL_V2_AUTHEN_FAILED:
 		return "Authentication failed with specified key.";
 	case TMR_ERROR_GEN2_PROTOCOL_V2_UNTRACE_FAILED:
-		return "Untrace opearation failed.";
+		return "Untrace operation failed.";
   case TMR_ERROR_AHAL_INVALID_FREQ:
     return "Invalid frequency";
   case TMR_ERROR_AHAL_CHANNEL_OCCUPIED:

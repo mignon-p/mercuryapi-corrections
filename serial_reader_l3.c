@@ -5149,7 +5149,7 @@ void TMR_SR_msgAddIdsSL900aGetBatteryLevel(uint8_t *msg, uint8_t *i, uint16_t ti
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param data If the operation is success, this data contains the requested value
  * @param target Filter to be applied.
@@ -5221,7 +5221,7 @@ void TMR_SR_msgAddIdsSL900aGetSensorValue(uint8_t *msg, uint8_t *i, uint16_t tim
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param data If the operation is success, this data contains the requested value
  * @param target Filter to be applied.
@@ -5291,7 +5291,7 @@ void TMR_SR_msgAddIdsSL900aGetMeasurementSetup(uint8_t *msg, uint8_t *i, uint16_
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param data If the operation is success, this data contains the requested value
  * @param target Filter to be applied.
@@ -5361,7 +5361,7 @@ void TMR_SR_msgAddIdsSL900aGetLogState(uint8_t *msg, uint8_t *i, uint16_t timeou
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param to specify SL900A sensor type
  * @param data If the operation is success, this data contains the requested value
@@ -5446,7 +5446,7 @@ void TMR_SR_msgAddIdsSL900aSetLogMode(uint8_t *msg, uint8_t *i, uint16_t timeout
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param level IDS password level
  * @param form IDS logging form
@@ -5505,7 +5505,7 @@ void TMR_SR_msgAddIdsSL900aInitialize(uint8_t *msg, uint8_t *i, uint16_t timeout
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param delayTime to secify delayTime
  * @param applicatioData to specify applicationData
@@ -5556,7 +5556,7 @@ void TMR_SR_msgAddIdsSL900aEndLog(uint8_t *msg, uint8_t *i, uint16_t timeout, TM
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param data If the operation is success, this data contains the requested value
  * @param target Filter to be applied.
@@ -5606,7 +5606,7 @@ void TMR_SR_msgAddIdsSL900aSetPassword(uint8_t *msg, uint8_t *i, uint16_t timeou
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param data If the operation is success, this data contains the requested value
  * @param target Filter to be applied.
@@ -5656,7 +5656,7 @@ void TMR_SR_msgAddIdsSL900aAccessFifoStatus(uint8_t *msg, uint8_t *i, uint16_t t
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param data If the operation is success, this data contains the requested value
  * @param target Filter to be applied.
@@ -5727,7 +5727,7 @@ void TMR_SR_msgAddIdsSL900aAccessFifoRead(uint8_t *msg, uint8_t *i, uint16_t tim
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param data If the operation is success, this data contains the requested value
  * @param target Filter to be applied.
@@ -5801,7 +5801,7 @@ void TMR_SR_msgAddIdsSL900aAccessFifoWrite(uint8_t *msg, uint8_t *i, uint16_t ti
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param data If the operation is success, this data contains the requested value
  * @param target Filter to be applied.
@@ -5872,7 +5872,7 @@ void TMR_SR_msgAddIdsSL900aStartLog(uint8_t *msg, uint8_t *i, uint16_t timeout, 
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param startTime to specify count start time
  * @param target Filter to be applied.
@@ -5919,7 +5919,7 @@ void TMR_SR_msgAddIdsSL900aGetCalibrationData(uint8_t *msg, uint8_t *i, uint16_t
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param data If the operation is success, this data contains the requested value
  * @param target Filter to be applied.
@@ -6004,7 +6004,7 @@ void TMR_SR_msgAddIdsSL900aSetCalibrationData(uint8_t *msg, uint8_t *i, uint16_t
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param calibration to spcify the calibration data
  * @param target Filter to be applied.
@@ -6054,7 +6054,7 @@ void TMR_SR_msgAddIdsSL900aSetSfeParameters(uint8_t *msg, uint8_t *i, uint16_t t
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param sfe to spcify the sfe parameters
  * @param target Filter to be applied.
@@ -6171,7 +6171,7 @@ void TMR_SR_msgAddIdsSL900aSetShelfLife(uint8_t *msg, uint8_t *i, uint16_t timeo
  * @param reader The reader
  * @param timeout The timeout of the operation, in milliseconds. Valid range is 0-65535.
  * @param accessPassword The access password to use to write on the tag
- * @param commandcode to specify the opearation
+ * @param commandcode to specify the operation
  * @param password to specify SL900A password access level values
  * @param data If the operation is success, this data contains the requested value
  * @param target Filter to be applied.

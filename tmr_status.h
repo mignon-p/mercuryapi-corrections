@@ -136,7 +136,7 @@ typedef uint32_t TMR_Status;
 #define TMR_ERROR_GEN2_PROCOCOL_MEMORY_LOCKED             TMR_ERROR_CODE(0x424)
 /**Authentication failed with specified key. */
 #define TMR_ERROR_GEN2_PROTOCOL_V2_AUTHEN_FAILED				TMR_ERROR_CODE(0x425)
-/** Untrace opearation failed. */
+/** Untrace operation failed. */
 #define TMR_ERROR_GEN2_PROTOCOL_V2_UNTRACE_FAILED				TMR_ERROR_CODE(0x426)
 /**Internal reader error.  Contact support. */
 #define TMR_ERROR_GEN2_PROTOCOL_INSUFFICIENT_POWER        TMR_ERROR_CODE(0x42b)

@@ -4751,7 +4751,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_GetSensorValue op;
 
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -4773,7 +4773,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_GetMeasurementSetup op;
 
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -4795,7 +4795,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_GetCalibrationData op;
 
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -4817,7 +4817,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_SetCalibrationData op;
 
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -4839,7 +4839,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_SetSfeParameters op;
 
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -4862,7 +4862,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_GetLogState op;
 
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -4884,7 +4884,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_SetLogMode op;
 
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -4907,7 +4907,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_Initialize op;
       
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -4930,7 +4930,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_EndLog op;
 
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -4952,7 +4952,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_SetPassword op;
 
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -4974,7 +4974,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_AccessFifoStatus op;
       
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -4995,7 +4995,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_AccessFifoRead op;
 
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -5016,7 +5016,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_AccessFifoWrite op;
 
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -5037,7 +5037,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_StartLog op;
       
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -5059,7 +5059,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_GetBatteryLevel op;
 
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -5081,7 +5081,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_SetLogLimits op;
 
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
@@ -5103,7 +5103,7 @@ TMR_SR_executeTagOp(struct TMR_Reader *reader, TMR_TagOp *tagop, TMR_TagFilter *
     {
       TMR_TagOp_GEN2_IDS_SL900A_SetShelfLife op;
 
-      /* Set the protocol for tag opearation */
+      /* Set the protocol for tag operation */
       ret = setProtocol(reader, TMR_TAG_PROTOCOL_GEN2);
       if (TMR_SUCCESS != ret)
       {
