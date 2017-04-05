@@ -172,7 +172,7 @@ TMR_strerr(TMR_Reader *reader, TMR_Status status)
     return "Other Gen2 error";
   case TMR_ERROR_GEN2_PROTOCOL_MEMORY_OVERRUN_BAD_PC:
     return "Gen2 memory overrun - bad PC";
-  case TMR_ERROR_GEN2_PROCOCOL_MEMORY_LOCKED:\
+  case TMR_ERROR_GEN2_PROCOCOL_MEMORY_LOCKED:
     return "Gen2 memory locked";
   case TMR_ERROR_GEN2_PROTOCOL_INSUFFICIENT_POWER:
     return "Gen2 tag has insufficent power for operation";

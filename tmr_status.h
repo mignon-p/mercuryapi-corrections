@@ -74,7 +74,7 @@ typedef uint32_t TMR_Status;
 #define TMR_ERROR_INVALID_BAUD_RATE                       TMR_ERROR_CODE(0x10a)
 /**Region is not supported. */
 #define TMR_ERROR_INVALID_REGION                          TMR_ERROR_CODE(0x10b)
-/** License key code in invalid */
+/** License key code is invalid */
 #define TMR_ERROR_INVALID_LICENSE_KEY                     TMR_ERROR_CODE(0x10c)
 /**Firmware is corrupt: Checksum doesn't match content. */
 #define TMR_ERROR_BL_INVALID_IMAGE_CRC                    TMR_ERROR_CODE(0x200)
