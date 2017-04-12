@@ -3765,7 +3765,7 @@ TMR_SR_msgSetupMultipleProtocolSearch(TMR_Reader *reader, uint8_t *msg, TMR_SR_O
     case TMR_SR_OPCODE_READ_TAG_ID_MULTIPLE:
       {
         /**
-        * simple read plan uses this funcution, only when tagop is NULL,
+        * simple read plan uses this function, only when tagop is NULL,
         * s0, need to check for simple read plan tagop.
         **/
         if (TMR_READ_PLAN_TYPE_MULTI == reader->readParams.readPlan->type)
@@ -5576,7 +5576,7 @@ TMR_SR_cmdSL900aEndLog(TMR_Reader *reader, uint16_t timeout, TMR_GEN2_Password a
 }
 
 /**
- * Helper funcution to form the IDS SL900A SetPassword command
+ * Helper function to form the IDS SL900A SetPassword command
  */ 
 void TMR_SR_msgAddIdsSL900aSetPassword(uint8_t *msg, uint8_t *i, uint16_t timeout, TMR_GEN2_Password accessPassword,
                                        uint8_t CommandCode, uint32_t password, PasswordLevel level, uint32_t newPassword,
@@ -6796,7 +6796,7 @@ TMR_SR_cmdResetReaderStatistics(TMR_Reader *reader, TMR_SR_ReaderStatisticsFlag 
 
 
 /**
- * Helper funcution to be used in GetReaderStats
+ * Helper function to be used in GetReaderStats
  */ 
 TMR_Status
 TMR_fillReaderStats(TMR_Reader *reader, TMR_Reader_StatsValues* stats, uint16_t flag, uint8_t* msg, uint8_t offset)

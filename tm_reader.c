@@ -3027,7 +3027,7 @@ TMR_init_GEN2_Impinj_Monza4_Payload(TMR_Monza4_Payload *payload)
 }
 
 /**
- * Helper funcution to update or modifying the sfe parameters
+ * Helper function to update or modifying the sfe parameters
  */
 TMR_Status
 TMR_update_GEN2_IDS_SL900A_SfeParameters(TMR_TagOp_GEN2_IDS_SL900A_SfeParameters *sfe)
@@ -3091,7 +3091,7 @@ TMR_update_GEN2_IDS_SL900A_SfeParameters(TMR_TagOp_GEN2_IDS_SL900A_SfeParameters
 }
 
 /**
- * Helper funcution to update or modifying the calibration Data
+ * Helper function to update or modifying the calibration Data
  */
 TMR_Status
 TMR_update_GEN2_IDS_SL900A_CalibrationData(TMR_TagOp_GEN2_IDS_SL900A_CalibrationData *cal)
@@ -3188,7 +3188,7 @@ TMR_update_GEN2_IDS_SL900A_CalibrationData(TMR_TagOp_GEN2_IDS_SL900A_Calibration
 }
 
 /**
- * Helper funcution to set the calibration Data
+ * Helper function to set the calibration Data
  */
 TMR_Status
 TMR_init_GEN2_IDS_SL900A_CalibrationData(uint8_t byte[7], TMR_TagOp_GEN2_IDS_SL900A_CalibrationData *cal)
@@ -3218,7 +3218,7 @@ TMR_init_GEN2_IDS_SL900A_CalibrationData(uint8_t byte[7], TMR_TagOp_GEN2_IDS_SL9
 }
 
 /**
- * Helper funcution to set the sfe parameters
+ * Helper function to set the sfe parameters
  */
 TMR_Status
 TMR_init_GEN2_IDS_SL900A_SfeParameters(uint8_t byte[2], TMR_TagOp_GEN2_IDS_SL900A_SfeParameters *sfe)

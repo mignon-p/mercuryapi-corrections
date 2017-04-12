@@ -52,7 +52,7 @@ extern "C" {
   }TMR_TimeStructure;
 
 /*
- * The time funcution used to return the current time in
+ * The time function used to return the current time in
  * thing magic time structure.
  */
 TMR_TimeStructure tmr_gettimestructure(void);

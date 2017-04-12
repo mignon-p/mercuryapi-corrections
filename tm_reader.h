@@ -1167,9 +1167,9 @@ TMR_Status TMR_stopReading(struct TMR_Reader *reader);
 
 /**
  * @ingroup reader
- * Stores the transport init function againest the provided scheme.
+ * Stores the transport init function against the provided scheme.
  *
- * @param scheme the transport schme name.
+ * @param scheme the transport scheme name.
  * @param nativeInit reference to the init function.
  */ 
 TMR_Status TMR_setSerialTransport(char* scheme, TMR_TransportNativeInit nativeInit);
@@ -1185,14 +1185,14 @@ const char *TMR_strerr(TMR_Reader *reader, TMR_Status status);
 
 /**
  * @ingroup reader
- * This funcution will initialize the
+ * This function will initialize the
  * TMR_StatValues structure with the default values
  */
 TMR_Status TMR_STATS_init(TMR_Reader_StatsValues *stats);
 
 /**
  * @ingroup reader
- * This funcution loads the reader configuration parameters from file and applies to module.
+ * This function loads the reader configuration parameters from file and applies to module.
  *
  * @param reader The reader to operate on.
  * @param filePath load reader configurations from filepath.
@@ -1201,7 +1201,7 @@ TMR_Status TMR_loadConfig(struct TMR_Reader *reader, char *filePath);
 
 /**
  * @ingroup reader
- * This funcution saves the current reader configuration parameters and its values to a file.
+ * This function saves the current reader configuration parameters and its values to a file.
  *
  * @param reader The reader to operate on.
  * @param filePath  save reader configurations from filepath.
