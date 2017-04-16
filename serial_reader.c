@@ -228,7 +228,7 @@ TMR_SR_boot(TMR_Reader *reader, uint32_t currentBaudRate)
   }
 
   /**
-   * In case for M6E and it's varient  check for CRC
+   * In case for M6E and its variant check for CRC
    **/
   if ((TMR_SR_MODEL_M6E == reader->u.serialReader.versionInfo.hardware[0]) ||
       (TMR_SR_MODEL_M6E_I == reader->u.serialReader.versionInfo.hardware[0]) ||
