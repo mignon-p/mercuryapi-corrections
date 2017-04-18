@@ -67,7 +67,7 @@ typedef enum TMR_Param
   TMR_PARAM_ANTENNA_PORTSWITCHGPOS,
   /** "/reader/antenna/settlingTimeList", TMR_PortValueList  */
   TMR_PARAM_ANTENNA_SETTLINGTIMELIST,
-  /** "reader/antenna/returnLoss", TMR_PortValueList */
+  /** "/reader/antenna/returnLoss", TMR_PortValueList */
   TMR_PARAM_ANTENNA_RETURNLOSS,
   /** "/reader/antenna/txRxMap", TMR_AntennaMapList  */
   TMR_PARAM_ANTENNA_TXRXMAP,
@@ -107,7 +107,7 @@ typedef enum TMR_Param
   TMR_PARAM_READ_ASYNCONTIME,
   /** "/reader/read/plan", TMR_ReadPlan */
   TMR_PARAM_READ_PLAN,
-  /** "/reader/radio/enablePowerSave, bool **/
+  /** "/reader/radio/enablePowerSave", bool **/
   TMR_PARAM_RADIO_ENABLEPOWERSAVE,
   /** "/reader/radio/powerMax", int16_t */
   TMR_PARAM_RADIO_POWERMAX,
@@ -193,7 +193,7 @@ typedef enum TMR_Param
   TMR_PARAM_TAGREADDATA_UNIQUEBYPROTOCOL,
   /** "/reader/description", TMR_String */
   TMR_PARAM_READER_DESCRIPTION,
-  /** "reader/hostname", TMR_String */
+  /** "/reader/hostname", TMR_String */
   TMR_PARAM_READER_HOSTNAME,
   /** "/reader/currentTime", struct tm */
   TMR_PARAM_CURRENTTIME,
@@ -201,7 +201,7 @@ typedef enum TMR_Param
 	TMR_PARAM_READER_WRITE_REPLY_TIMEOUT,
 	/** "/reader/gen2/writeEarlyExit", bool */
 	TMR_PARAM_READER_WRITE_EARLY_EXIT,
-  /** "reader/stats/enable", TMR_StatsEnable */
+  /** "/reader/stats/enable", TMR_StatsEnable */
   TMR_PARAM_READER_STATS_ENABLE,
   /** "/reader/trigger/read/Gpi", TMR_uint8List */
   TMR_PARAM_TRIGGER_READ_GPI,
