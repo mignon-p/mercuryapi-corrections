@@ -119,9 +119,9 @@ typedef enum TMR_Reader_StatsFlag
   TMR_READER_STATS_FLAG_RF_ON_TIME = (1 << 0),
   /** Noise floor with the TX on for the antennas were last configured for searching */
   TMR_READER_STATS_FLAG_NOISE_FLOOR_SEARCH_RX_TX_WITH_TX_ON = (1 << 6),
-  /** Current frequency in uints of Khz */
+  /** Current frequency in units of Khz */
   TMR_READER_STATS_FLAG_FREQUENCY = (1 << 7),
-  /** Current temperature of the device in units of Celcius */
+  /** Current temperature of the device in units of Celsius */
   TMR_READER_STATS_FLAG_TEMPERATURE = (1 << 8),
   /** Current antenna */
   TMR_READER_STATS_FLAG_ANTENNA_PORTS = (1 << 9),
