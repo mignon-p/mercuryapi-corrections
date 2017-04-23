@@ -107,7 +107,7 @@ struct TMR_SR_SerialTransport
    * @param this The TMR_SR_SerialTransport structure.
    * @param length The number of bytes to receive.
    * @param[out] messageLength The number of bytes received.
-   * @param[out] message Pointer to the location to store recieved bytes.
+   * @param[out] message Pointer to the location to store received bytes.
    * @param timeoutMs The duration for the operation to complete.
    */
   TMR_Status (*receiveBytes)(TMR_SR_SerialTransport *, uint32_t length,

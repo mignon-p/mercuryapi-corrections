@@ -370,7 +370,7 @@ struct TMR_Reader
   bool isStopNTags;
   /* Param wait indicator for Reader and protocol param control during continuous read */
   bool paramWait;
-  /* Param responsefor Reader and protocol param control during continuous read */
+  /* Param response for Reader and protocol param control during continuous read */
   uint8_t paramMessage[256];
   /* True Continuous Read Start indicator */
   bool hasContinuousReadStarted;
@@ -1001,7 +1001,7 @@ TMR_Param TMR_paramID(const char *name);
  * @ingroup reader
  * 
  * Add a listener to the list of functions that will be called for
- * each message sent to or recieved from the reader.
+ * each message sent to or received from the reader.
  *
  * @param reader The reader to operate on.
  * @param block A structure containing a pointer to the listener
@@ -1015,7 +1015,7 @@ TMR_Status TMR_addTransportListener(TMR_Reader *reader, TMR_TransportListenerBlo
  * @ingroup reader
  * 
  * Remove a listener from the list of functions that will be called
- * for each message sent to or recieved from the reader.
+ * for each message sent to or received from the reader.
  *
  * @param reader The reader to operate on.
  * @param block A structure containing a pointer to the listener

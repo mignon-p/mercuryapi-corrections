@@ -358,7 +358,7 @@ retryHeader:
      }
 
     /* We got a response for a different command than the one we
-     * sent. This usually means we recieved the boot-time message from
+     * sent. This usually means we received the boot-time message from
      * a M6e, and thus that the device was rebooted somewhere between
      * the previous command and this one. Report this as a problem.
      */

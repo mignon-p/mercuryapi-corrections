@@ -140,7 +140,7 @@ typedef struct TMR_TagReadData
   uint8_t gpioCount;
   /** Number of times the tag was read */
   uint32_t readCount;
-  /** Strength of the signal recieved from the tag */
+  /** Strength of the signal received from the tag */
   int32_t rssi;
   /** RF carrier frequency the tag was read with */
   uint32_t frequency;
