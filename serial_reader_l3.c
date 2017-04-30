@@ -1743,7 +1743,7 @@ TMR_SR_parseMetadataFromMessage(TMR_Reader *reader, TMR_TagReadData *read, uint1
 	}
 
   /**
-   * if the gen2AllMemoryBankEnabled is enbled,
+   * if the gen2AllMemoryBankEnabled is enabled,
    * extract the values
    **/
   if (reader->u.serialReader.gen2AllMemoryBankEnabled)

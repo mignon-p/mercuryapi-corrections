@@ -135,7 +135,7 @@ typedef struct TMR_GEN2_Select
   bool invert;
   /** The memory bank in which to compare the mask */
   TMR_GEN2_Bank bank;
-  /** The location (in bits) at which t to begin comparing the mask */
+  /** The location (in bits) at which to begin comparing the mask */
   uint32_t bitPointer;
   /** The length (in bits) of the mask */
   uint16_t maskBitLength;
