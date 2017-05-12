@@ -165,7 +165,7 @@ typedef enum TMR_Param
   TMR_PARAM_EXTENDEDEPC,
   /** "/reader/statistics", TMR_SR_ReaderStatistics */
   TMR_PARAM_READER_STATISTICS,
-  /** "/reader/stats", TMR_ */
+  /** "/reader/stats", TMR_Reader_StatsValues */
   TMR_PARAM_READER_STATS,
   /** "/reader/uri", TMR_String */
   TMR_PARAM_URI,
