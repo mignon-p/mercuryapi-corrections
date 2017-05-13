@@ -426,7 +426,7 @@ TMR_SR_boot(TMR_Reader *reader, uint32_t currentBaudRate)
       {
         /*
          * Modules with firmware older than wilder will throw 0x105 error, as it was not 
-         * implemented. Catch this error and but do not return.
+         * implemented. Catch this error but do not return.
          */
 		sr->productId = 0xFFFF;
       }
@@ -497,7 +497,7 @@ TMR_SR_boot(TMR_Reader *reader, uint32_t currentBaudRate)
 
   /**
    * Enable the extended EPC flag in case
-   * of M5E and its varients
+   * of M5E and its variants
    */
   if ((TMR_SR_MODEL_M6E != sr->versionInfo.hardware[0]) &&
       (TMR_SR_MODEL_MICRO != sr->versionInfo.hardware[0]) &&
@@ -4020,7 +4020,7 @@ TMR_SR_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
     case TMR_SR_MODEL_MICRO:
       {
         /**
-         * Micro has following varients.
+         * Micro has following variants.
          **/
         switch (sr->versionInfo.hardware[3])
         {

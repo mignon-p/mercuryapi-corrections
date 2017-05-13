@@ -169,7 +169,7 @@ typedef struct TMR_SR_GEN2_Q
 } TMR_SR_GEN2_Q;
 
 
-/** An antenna port with an associated uint16_t value. */
+/** An antenna port with an associated int32_t value. */
 typedef struct TMR_PortValue
 {
   /** The port number */
@@ -309,7 +309,7 @@ typedef struct TM_SR_SerialReader
   int tagsRemaining;
   /* Buffer tag records fetched from module but not yet passed to caller. */
   uint8_t bufResponse[TMR_SR_MAX_PACKET_SIZE];
-  /* bufResopnse read index */
+  /* bufResponse read index */
   uint8_t bufPointer;
   /* Number of tag records in buffer but not yet passed to caller */
   uint8_t tagsRemainingInBuffer;
