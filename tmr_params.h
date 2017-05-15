@@ -207,6 +207,7 @@ typedef enum TMR_Param
   TMR_PARAM_TRIGGER_READ_GPI,
   /** "/reader/metadataflags", TMR_TRD_MetadataFlag*/
   TMR_PARAM_METADATAFLAG,
+  /** "/reader/licensedFeatures", TMR_uint8List */
   TMR_PARAM_LICENSED_FEATURES,
   TMR_PARAM_END,
   TMR_PARAM_MAX = TMR_PARAM_END-1,
