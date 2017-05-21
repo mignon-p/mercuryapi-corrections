@@ -85,15 +85,15 @@ typedef enum TMR_Param
   TMR_PARAM_GEN2_SESSION,
   /** "/reader/gen2/target", TMR_GEN2_Target */
   TMR_PARAM_GEN2_TARGET,
-  /** "/reader/gen2/BLF", TMR_Gen2_LinkFrequency */
+  /** "/reader/gen2/BLF", TMR_GEN2_LinkFrequency */
   TMR_PARAM_GEN2_BLF,
-  /** "/reader/gen2/tari", TMR_Gen2_Tari */
+  /** "/reader/gen2/tari", TMR_GEN2_Tari */
   TMR_PARAM_GEN2_TARI,
-  /**"/reader/gen2/writeMode", TMR_Gen2_WriteMode*/
+  /**"/reader/gen2/writeMode", TMR_GEN2_WriteMode */
   TMR_PARAM_GEN2_WRITEMODE,
-  /** "/reader/gen2/bap", TMR_Gen2_Bap */
+  /** "/reader/gen2/bap", TMR_GEN2_Bap */
   TMR_PARAM_GEN2_BAP,
-  /** "/reader/gen2/protocolExtension", TMR_PARAM_GEN2_PROTOCOLEXTENSION */
+  /** "/reader/gen2/protocolExtension", TMR_GEN2_ProtocolExtension */
   TMR_PARAM_GEN2_PROTOCOLEXTENSION,
   /** "/reader/iso180006b/BLF", TMR_ISO180006B_LinkFrequency */
   TMR_PARAM_ISO180006B_BLF,
