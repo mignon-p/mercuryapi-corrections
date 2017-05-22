@@ -28,6 +28,7 @@
  */
 
 #include <stddef.h>
+#include <string.h>
 
 #include "osdep.h"
 #include "tmr_types.h"
@@ -171,7 +172,7 @@ TMR_stringCopy(TMR_String *dest, const char *src, int len)
   }
   if (dest->max > 0)
   {
-    tm_memcpy(dest->value, src, len);
+    memcpy(dest->value, src, len);
     dest->value[len] = '\0';
   }
 }
