@@ -152,14 +152,14 @@ Note:To run readsync_baremetal codelet you have to
 
 /**
  * Enabling  this option will enable the support for the parameters defined 
- * in stdio.h header file like FILE *. This check is required as stdio.h doese not
+ * in stdio.h header file like FILE *. This check is required as stdio.h does not
  * exist in some of the embedded  architectures.
  */
 #define  TMR_ENABLE_STDIO
   
 /**
  * Enabling  this option will enable the support for the parameters defined 
- * in string.h header file like sterror(). This check is required as string.h doese not
+ * in string.h header file like strerror(). This check is required as string.h does not
  * exist in some of the embedded  architectures.
  */
 #define  TMR_USE_STRERROR
@@ -210,14 +210,14 @@ Note:To run readsync_baremetal codelet you have to
 
 /**
  * Enabling  this option will enable the support for the parameters defined 
- * in stdio.h header file like FILE *. This check is required as stdio.h doese not
+ * in stdio.h header file like FILE *. This check is required as stdio.h does not
  * exist in some of the embedded  architectures.
  */
 #undef  TMR_ENABLE_STDIO
   
 /**
  * Enabling  this option will enable the support for the parameters defined 
- * in string.h header file like sterror(). This check is required as string.h doese not
+ * in string.h header file like strerror(). This check is required as string.h does not
  * exist in some of the embedded  architectures.
  */
 #undef  TMR_USE_STRERROR
