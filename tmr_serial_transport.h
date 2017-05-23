@@ -78,7 +78,7 @@ struct TMR_SR_SerialTransport
   /**
    * This callback causes the communication interface to be opened but
    * does not transmit any serial-layer data. This should perform
-   * actionms such as opening a serial port device or establishing a
+   * actions such as opening a serial port device or establishing a
    * network connection within a wrapper protocol.
    *
    * @param this The TMR_SR_SerialTransport structure.
