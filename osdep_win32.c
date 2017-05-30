@@ -29,6 +29,9 @@
 #include <time.h>
 #include "osdep.h"
 
+// https://stackoverflow.com/questions/6161776/convert-windows-filetime-to-second-in-unix-linux
+#define SEC_TO_UNIX_EPOCH 11644473600LL
+
 uint64_t
 tmr_gettime()
 {
@@ -40,28 +43,21 @@ tmr_gettime()
   SystemTimeToFileTime(&st, &ft);
   li.LowPart = ft.dwLowDateTime;
   li.HighPart = ft.dwHighDateTime;
-  totalms=(((uint64_t)li.LowPart)>>32 || ((uint64_t)(li.HighPart)))/10000;
+  totalms=(((uint64_t)li.LowPart) | ((uint64_t)li.HighPart)<<32)/10000;
+  totalms -= SEC_TO_UNIX_EPOCH * 1000;
   return totalms;
 }
 
 uint32_t
 tmr_gettime_low()
 {
-  SYSTEMTIME st;
-  FILETIME ft;
-  GetSystemTime(&st);
-  SystemTimeToFileTime(&st, &ft);
-  return ft.dwLowDateTime;
+  return (uint32_t) tmr_gettime();
 }
 
 uint32_t
 tmr_gettime_high()
 {
-  SYSTEMTIME st;
-  FILETIME ft;
-  GetSystemTime(&st);
-  SystemTimeToFileTime(&st, &ft);
-  return ft.dwHighDateTime;
+  return (uint32_t) (tmr_gettime() >> 32);
 }
 
 void
