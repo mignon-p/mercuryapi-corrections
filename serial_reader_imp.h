@@ -40,7 +40,7 @@ extern "C" {
 /* This is used to enable the Gen2 secure readdata option */
 
 #ifndef BARE_METAL
-  bool isSecureAccessEnabled ;
+  extern bool isSecureAccessEnabled ;
 #else
   static bool isSecureAccessEnabled;	
 #endif
