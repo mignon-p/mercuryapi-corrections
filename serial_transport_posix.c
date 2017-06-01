@@ -127,12 +127,19 @@ s_receiveBytes(TMR_SR_SerialTransport *this, uint32_t length,
 
   do
   {
-    FD_ZERO(&set);
-    FD_SET(c->handle, &set);
-    tv.tv_sec = timeoutMs / 1000;
-    tv.tv_usec = (timeoutMs % 1000) * 1000;
-    /* Ideally should reset this timeout value every time through */
-    ret = select(c->handle + 1, &set, NULL, NULL, &tv);
+    do
+    {
+      FD_ZERO(&set);
+      FD_SET(c->handle, &set);
+      tv.tv_sec = timeoutMs / 1000;
+      tv.tv_usec = (timeoutMs % 1000) * 1000;
+      /* Ideally should reset this timeout value every time through */
+      ret = select(c->handle + 1, &set, NULL, NULL, &tv);
+    } while (ret == -1 && errno == EINTR);
+    if (ret == -1)
+    {
+      return TMR_ERROR_COMM_ERRNO(errno);
+    }
     if (ret < 1)
     {
       return TMR_ERROR_TIMEOUT;
