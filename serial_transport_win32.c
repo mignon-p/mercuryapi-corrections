@@ -34,7 +34,9 @@
 #ifdef WIN32
 #include <windows.h>
 #include <stdio.h>
-#define snprintf sprintf_s 
+#ifndef __GNUC__
+#define snprintf sprintf_s
+#endif
 #endif /* WIN32 */
 
 #include "tm_reader.h"
