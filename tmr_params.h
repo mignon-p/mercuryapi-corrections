@@ -133,7 +133,7 @@ typedef enum TMR_Param
   TMR_PARAM_TAGREADDATA_UNIQUEBYDATA,
   /** "/reader/tagop/antenna", uint8_t */
   TMR_PARAM_TAGOP_ANTENNA,
-  /** "/reader/tagop/protocol", TMR_Protocol */
+  /** "/reader/tagop/protocol", TMR_TagProtocol */
   TMR_PARAM_TAGOP_PROTOCOL,
   /** "/reader/version/hardware", TMR_String */
   TMR_PARAM_VERSION_HARDWARE,
@@ -208,6 +208,7 @@ typedef enum TMR_Param
   /** "/reader/metadataflags", TMR_TRD_MetadataFlag*/
   TMR_PARAM_METADATAFLAG,
   TMR_PARAM_LICENSED_FEATURES,
+  TMR_PARAM_SELECTED_PROTOCOLS,
   TMR_PARAM_END,
   TMR_PARAM_MAX = TMR_PARAM_END-1,
 

@@ -194,6 +194,9 @@ TMR_Status TMR_LLRP_cmdSetTMAsyncOffTime(TMR_Reader *reader, uint32_t offtime);
 /*ThingMagic Licensed Features*/
 TMR_Status TMR_LLRP_cmdGetLicensedFeatures(TMR_Reader *reader, TMR_uint8List  *features);
 
+/*ThingMagic Selected Protocols*/
+TMR_Status TMR_LLRP_cmdGetSelectedProtocols(TMR_Reader *reader, TMR_TagProtocolList *protocolList);
+
 /* ThingMagic DeDuplication */
 TMR_Status TMR_LLRP_cmdGetThingMagicDeDuplication(TMR_Reader *reader, TMR_LLRP_TMDeDuplication *duplication);
 TMR_Status TMR_LLRP_cmdSetThingMagicDeDuplication(TMR_Reader *reader, TMR_LLRP_TMDeDuplication *duplication);

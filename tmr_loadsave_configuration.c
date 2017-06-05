@@ -32,7 +32,7 @@
 #include <inttypes.h>
 #include <ctype.h>
 #include <stdlib.h>
-#ifndef WIN32
+#if !defined(WIN32) && !defined(WINCE)
 #include <libgen.h>
 #endif
 
@@ -40,7 +40,7 @@
 #include "tmr_utils.h"
 #include "serial_reader_imp.h"
 
-#ifdef WIN32
+#if defined(WIN32) || defined(WINCE)
 #define strncasecmp _strnicmp
 #endif /* WIN32 */
 
