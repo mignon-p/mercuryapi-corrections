@@ -30,6 +30,9 @@
 #include "tm_reader.h"
 #include "serial_reader_imp.h"
 #include <stdio.h>
+
+bool IsDutyCycleEnabled(TMR_Reader *reader);
+TMR_Status restart_reading(struct TMR_Reader *reader);
 #ifdef TMR_ENABLE_BACKGROUND_READS
 
 #include <stdlib.h>
@@ -52,7 +55,6 @@
 static void *do_background_reads(void *arg);
 static void *parse_tag_reads(void *arg);
 static void process_async_response(TMR_Reader *reader);
-bool IsDutyCycleEnabled(TMR_Reader *reader);
 bool isBufferOverFlow = false;
 #endif /* TMR_ENABLE_BACKGROUND_READS */
 
@@ -61,10 +63,37 @@ TMR_startReading(struct TMR_Reader *reader)
 {
 #ifdef SINGLE_THREAD_ASYNC_READ
   TMR_Status ret;
-  reader->continuousReading = true;
-  ret = TMR_read(reader, 500, NULL);
+  uint32_t ontime;
+  
+  TMR_paramGet(reader, TMR_PARAM_READ_ASYNCONTIME, &ontime);
+  reader->continuousReading = true; 
+  if (((TMR_SR_MODEL_M6E == reader->u.serialReader.versionInfo.hardware[0])||
+	(TMR_SR_MODEL_M6E_I == reader->u.serialReader.versionInfo.hardware[0]) ||
+	(TMR_SR_MODEL_MICRO == reader->u.serialReader.versionInfo.hardware[0]) ||
+	(TMR_SR_MODEL_M6E_NANO == reader->u.serialReader.versionInfo.hardware[0])) &&
+	(reader->readParams.asyncOffTime == 0 || (reader->readParams.asyncOffTime != 0 && IsDutyCycleEnabled(reader)) ) &&
+	((TMR_READ_PLAN_TYPE_SIMPLE == reader->readParams.readPlan->type) ||
+	((TMR_READ_PLAN_TYPE_MULTI == reader->readParams.readPlan->type)  &&
+	(compareAntennas(&reader->readParams.readPlan->u.multi))))
+	)
+  {
+	if (reader->readParams.asyncOffTime == 0)
+	{
+		reader->dutyCycle = false;
+	}
+	else
+	{
+		reader->dutyCycle = true;
+	}
+  }
+  else
+  {
+	reader->dutyCycle = false;
+  }
+  ret = TMR_read(reader, ontime, NULL);
   if(TMR_SUCCESS != ret)
-     return ret;
+	return ret;
+	 
 #else
 #ifdef TMR_ENABLE_BACKGROUND_READS
   int ret;
@@ -254,7 +283,8 @@ TMR_startReading(struct TMR_Reader *reader)
 
   return TMR_SUCCESS;
 }
-#ifdef TMR_ENABLE_BACKGROUND_READS
+
+#if defined(TMR_ENABLE_BACKGROUND_READS)|| defined(SINGLE_THREAD_ASYNC_READ)
 bool IsDutyCycleEnabled(struct TMR_Reader *reader)
 {
 	uint16_t i; 
@@ -278,9 +308,9 @@ bool IsDutyCycleEnabled(struct TMR_Reader *reader)
 	for (i = 0; i < 4; i++)
 	{
 		if (readerVersion[i] < checkVersion[i])
-		{
 			return false;
-		}
+		else if (readerVersion[i] > checkVersion[i])
+			return true;
 	}
 	return true;
 }
@@ -468,6 +498,42 @@ notify_stats_listeners(TMR_Reader *reader, TMR_Reader_StatsValues *stats)
   pthread_mutex_unlock(&reader->listenerLock);
 #endif
 }
+
+
+TMR_Status restart_reading(struct TMR_Reader *reader)
+{
+	TMR_Status ret = TMR_SUCCESS;
+
+	//Stop continuous reading
+	ret = TMR_stopReading(reader);
+	if(ret != TMR_SUCCESS)
+	{
+		return ret;
+	}
+
+	#ifdef SINGLE_THREAD_ASYNC_READ
+	//Receive all tags from the previous reading
+	{
+		TMR_TagReadData trd;
+		while(true)
+		{
+			ret = TMR_hasMoreTags(reader);
+			if (TMR_SUCCESS == ret)
+			{
+				TMR_getNextTag(reader, &trd);
+				notify_read_listeners(reader, &trd);
+			}
+			else if(ret == TMR_ERROR_END_OF_READING)
+			break;
+		}
+	}
+	#endif
+	//Restart reading
+	ret = TMR_startReading(reader);
+
+	return ret;
+}
+
 
 #ifdef TMR_ENABLE_BACKGROUND_READS
 /* NOTE: There is only one auth object for all the authreq listeners, so whichever listener touches it last wins.
@@ -1104,6 +1170,7 @@ do_background_reads(void *arg)
 
             ret = TMR_hasMoreTags(reader);
             reader->trueAsyncflag = false;
+			reader->hasContinuousReadStarted = false;
             break;
           }
         }

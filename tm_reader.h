@@ -30,6 +30,17 @@
  * THE SOFTWARE.
  */
 
+/* Due to incompatibilities between winsock.h and winsock2.h (plus interactions
+ * with windows.h) you're in for a storm of "redefinition" errors if you don't
+ * include winsock2.h first.
+ * 
+ * This is surprisingly hard, because lots of other headers include winsock.h
+ * themselves.  So include winsock2.h as early as possible.
+ */
+#if defined(WIN32) || defined(WINCE)
+#include <winsock2.h>
+#endif
+
 #include "tm_config.h"
 
 /**
@@ -75,7 +86,7 @@ typedef TMR_Status (*TMR_TransportNativeInit)(TMR_SR_SerialTransport *transport,
 
 typedef struct TMR_readParams
 {
-#ifdef TMR_ENABLE_BACKGROUND_READS
+#if defined(TMR_ENABLE_BACKGROUND_READS)|| defined(SINGLE_THREAD_ASYNC_READ)
   uint32_t asyncOnTime;
   uint32_t asyncOffTime;
 #endif
@@ -926,6 +937,7 @@ TMR_Status TMR_reboot(struct TMR_Reader *reader);
  * @li /reader/region/id
  * @li /reader/region/lbt/enable
  * @li /reader/region/supportedRegions
+ * @li /reader/selectedProtocols
  * @li /reader/statistics
  * @li /reader/stats
  * @li /reader/stats/enable
