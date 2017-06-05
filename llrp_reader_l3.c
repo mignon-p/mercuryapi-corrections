@@ -42,12 +42,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if !defined(WIN32) && !defined(WINCE)
 #include <sys/select.h>
-#include <time.h>
+#endif
+
+#include <time.h>	
 #include "llrp_reader_imp.h"
 #include "tmr_utils.h"
 
 #define BACKGROUND_RECEIVER_LOOP_PERIOD 100
+#define MAX_KEEP_ALIVE_ACK_MISSES 3
 
 uint8_t TMR_LLRP_gpiListSargas[] = {0,1};
 uint8_t TMR_LLRP_gpoListSargas[] = {2,3};
@@ -226,8 +230,9 @@ TMR_LLRP_receiveMessage(TMR_Reader *reader, LLRP_tSMessage **pMsg, int timeoutMs
     
     return TMR_ERROR_LLRP_RECEIVEIO_ERROR;
   }
-
+#ifndef WINCE
   TMR_LLRP_notifyTransportListener(reader, *pMsg, false, timeoutMs);
+#endif
   return TMR_SUCCESS;
 }
 
@@ -259,9 +264,13 @@ TMR_LLRP_sendTimeout(TMR_Reader *reader, LLRP_tSMessage *pMsg, LLRP_tSMessage **
   }
 
 repeat:
+  if(true == reader->continuousReading)
+    pthread_mutex_lock(&reader->u.llrpReader.receiverLock);
   ret = TMR_LLRP_receiveMessage(reader, pRsp, timeoutMs);
   if (TMR_SUCCESS != ret)
   {
+    if(true == reader->continuousReading)
+      pthread_mutex_unlock(&reader->u.llrpReader.receiverLock);
     goto out;
   }
 
@@ -275,8 +284,21 @@ repeat:
      * No need for error checking though.
      **/
     TMR_LLRP_processReceivedMessage(reader, *pRsp);
+    if(true == reader->continuousReading)
+      pthread_mutex_unlock(&reader->u.llrpReader.receiverLock);
+    if(reader->u.llrpReader.isResponsePending == true)
+    {
+      if(pMsg->elementHdr.pType->pResponseType == reader->u.llrpReader.unhandledAsyncResponse.lMsg->elementHdr.pType)
+      {
+        *pRsp = reader->u.llrpReader.unhandledAsyncResponse.lMsg;
+        reader->u.llrpReader.isResponsePending = false;
+        goto out;
+      }
+    }
     goto repeat;
   }
+  if(true == reader->continuousReading)
+    pthread_mutex_unlock(&reader->u.llrpReader.receiverLock);
 
 out:
   if (false == reader->continuousReading)
@@ -915,8 +937,8 @@ TMR_LLRP_cmdGetReaderCapabilities(TMR_Reader *reader, TMR_LLRP_ReaderCapabilitie
              * tari values. i.e. tari25us=enum 0 and tari6.25= enum 2.
              * Hence, swapping the values
              */ 
-            maxTari = TMR_convertTari(minTariValue);
-            minTari = TMR_convertTari(maxTariValue);
+            maxTari = TMR_convertTari((uint16_t)minTariValue);
+            minTari = TMR_convertTari((uint16_t)maxTariValue);
 
             /** Cache blf value */
             capabilities->u.gen2Modes[index].blf = blf;
@@ -1195,6 +1217,103 @@ TMR_LLRP_cmdSetReadTransmitPowerList(TMR_Reader *reader, TMR_PortValueList *pPor
 }
 
 /**
+ * Command to get Selected protocols
+ *
+ * @param reader Reader pointer
+ * @param features  Pointer to TMR_TagProtocolList to hold the Selected Protoocls value
+ */
+TMR_Status
+TMR_LLRP_cmdGetSelectedProtocols(TMR_Reader *reader, TMR_TagProtocolList *protocolList)
+{
+  TMR_Status ret;
+  LLRP_tSGET_READER_CONFIG              *pCmd;
+  LLRP_tSMessage                        *pCmdMsg;
+  LLRP_tSMessage                        *pRspMsg;
+  LLRP_tSGET_READER_CONFIG_RESPONSE     *pRsp;
+  LLRP_tSThingMagicDeviceControlConfiguration   *pTMConfig;
+  LLRP_tSParameter                      *pCustParam;
+  //LLRP_tSThingMagicSelectedProtocols    *pTMSelectedProtocols;
+  LLRP_tSSelectedProtocol               *pSelectedProtocol;
+  uint8_t i;
+  
+  ret = TMR_SUCCESS;
+
+  pCmd = LLRP_GET_READER_CONFIG_construct();
+  LLRP_GET_READER_CONFIG_setRequestedData(pCmd, LLRP_GetReaderConfigRequestedData_Identification);
+  
+  /**
+   * "/reader/selectedProtocols" is a custom parameter. And is available as part of
+   * ThingMagicDeviceControlConfiguration.
+   * Initialize the custom parameter
+   **/
+  pTMConfig = LLRP_ThingMagicDeviceControlConfiguration_construct();
+  if (NULL == pTMConfig)
+  {
+    TMR_LLRP_freeMessage((LLRP_tSMessage *)pCmd);
+    return TMR_ERROR_LLRP;
+  }
+  
+  /**
+   * Set the requested data (i.e., Selected Protocols)
+   * And add to GET_READER_CONFIG message.
+   **/
+  LLRP_ThingMagicDeviceControlConfiguration_setRequestedData(pTMConfig, 
+      LLRP_ThingMagicControlConfiguration_ThingMagicSelectedProtocols);
+  if (LLRP_RC_OK != LLRP_GET_READER_CONFIG_addCustom(pCmd, &pTMConfig->hdr))
+  {
+    TMR_LLRP_freeMessage((LLRP_tSMessage *)pTMConfig);
+    TMR_LLRP_freeMessage((LLRP_tSMessage *)pCmd);
+    return TMR_ERROR_LLRP;
+  }
+
+  pCmdMsg       = &pCmd->hdr;
+  /**
+   * Now the message is framed completely and send the message
+   **/
+  ret = TMR_LLRP_send(reader, pCmdMsg, &pRspMsg);
+  /**
+   * Done with the command, free the message
+   * and check for message status
+   **/ 
+  TMR_LLRP_freeMessage((LLRP_tSMessage *)pCmd);
+  if (TMR_SUCCESS != ret)
+  {
+    return ret;
+  }
+
+  /**
+   * Check response message status
+   **/
+  pRsp = (LLRP_tSGET_READER_CONFIG_RESPONSE *) pRspMsg;
+  if (TMR_SUCCESS != TMR_LLRP_checkLLRPStatus(pRsp->pLLRPStatus))  
+  {
+    TMR_LLRP_freeMessage(pRspMsg);
+    return TMR_ERROR_LLRP; 
+  }
+
+  /**
+   * Response is success, extract selected protocols from response
+   **/
+  pCustParam = LLRP_GET_READER_CONFIG_RESPONSE_beginCustom(pRsp);
+  if (NULL != pCustParam)
+  {
+    protocolList->len = 0;
+    for (pSelectedProtocol = LLRP_ThingMagicSelectedProtocols_beginSelectedProtocol(
+          (LLRP_tSThingMagicSelectedProtocols *) pCustParam), i = 0;
+        (NULL != pSelectedProtocol);
+        pSelectedProtocol = LLRP_ThingMagicSelectedProtocols_nextSelectedProtocol(
+          pSelectedProtocol), i ++)
+    {
+      protocolList->list[i] = LLRP_SelectedProtocol_getProtocol(pSelectedProtocol);
+      protocolList->len ++;
+    }
+  }
+  
+  TMR_LLRP_freeMessage(pRspMsg);
+
+  return ret;
+}
+/**
  * Command to get Licensed features
  *
  * @param reader Reader pointer
@@ -1281,6 +1400,7 @@ TMR_LLRP_cmdGetLicensedFeatures(TMR_Reader *reader, TMR_uint8List *features)
   }
 
   memcpy(features->list, licensedFeatures.pValue, licensedFeatures.nValue);
+  features->len = licensedFeatures.nValue;
 
   TMR_LLRP_freeMessage(pRspMsg);
 
@@ -1362,7 +1482,7 @@ TMR_LLRP_cmdGetGPIState(TMR_Reader *reader, uint8_t *count, TMR_GpioPin state[])
   TMR_Status ret;
   LLRP_tSGET_READER_CONFIG              *pCmd;
   LLRP_tSMessage                        *pCmdMsg;
-  LLRP_tSMessage                        *pRspMsg;
+  LLRP_tSMessage                        *pRspMsg = NULL;
   LLRP_tSGET_READER_CONFIG_RESPONSE     *pRsp;
 
   *count = 0;
@@ -1557,7 +1677,7 @@ TMR_LLRP_cmdGetReadTransmitPowerList(TMR_Reader *reader, TMR_PortValueList *pPor
     {
       break;
     }
-    pPortValueList->list[i].port  = pAntConfig->AntennaID;
+    pPortValueList->list[i].port  = (uint8_t)pAntConfig->AntennaID;
     index = pAntConfig->pRFTransmitter->TransmitPower;
     if (NULL != reader->u.llrpReader.capabilities.powerTable.list)
     {
@@ -1804,7 +1924,7 @@ TMR_LLRP_cmdGetWriteTransmitPowerList(TMR_Reader *reader, TMR_PortValueList *pPo
       break;
     }
     pPortValueList->list[i].port
-      = ((LLRP_tSThingMagicAntennaConfiguration *) pCustParam)->AntennaID;
+      = (uint8_t)((LLRP_tSThingMagicAntennaConfiguration *) pCustParam)->AntennaID;
     pWriteTransmitPower =
       LLRP_ThingMagicAntennaConfiguration_getWriteTransmitPower((LLRP_tSThingMagicAntennaConfiguration *) pCustParam);
     index = LLRP_WriteTransmitPower_getWriteTransmitPower(pWriteTransmitPower);
@@ -1954,7 +2074,7 @@ TMR_LLRP_prepareTagFilter(LLRP_tSInventoryParameterSpec *ipSpec,
       LLRP_C1G2TagInventoryMask_setTagMask(pMask, tmpMask);
 
       /* Set bit Pointer */
-      LLRP_C1G2TagInventoryMask_setPointer(pMask, fp->bitPointer);
+      LLRP_C1G2TagInventoryMask_setPointer(pMask, (llrp_u16_t)fp->bitPointer);
 
       if(fp->invert)
       {
@@ -2192,6 +2312,7 @@ TMR_LLRP_cmdAddROSpec(TMR_Reader *reader, uint16_t readDuration,
   LLRP_tSAISpec                   *pAISpec;
   LLRP_tSTagReportContentSelector *pTagReportContentSelector;
   LLRP_tSROReportSpec             *pROReportSpec;
+  LLRP_tSTagObservationTrigger    *pAISpecTagObservationTrigger;
 
   llrp_u16v_t                     AntennaIDs;
   int                             i;
@@ -2318,8 +2439,22 @@ TMR_LLRP_cmdAddROSpec(TMR_Reader *reader, uint16_t readDuration,
          * In all other cases, i.e., for both sync and async read
          * AISpec stop trigger should be duration based.
          **/
-        LLRP_AISpecStopTrigger_setAISpecStopTriggerType(pAISpecStopTrigger, LLRP_AISpecStopTriggerType_Duration);
-        LLRP_AISpecStopTrigger_setDurationTrigger(pAISpecStopTrigger, readDuration);
+        if(reader->isStopNTags)
+        {
+          pAISpecTagObservationTrigger = LLRP_TagObservationTrigger_construct();
+          LLRP_TagObservationTrigger_setTriggerType(pAISpecTagObservationTrigger, 
+                     LLRP_TagObservationTriggerType_Upon_Seeing_N_Tags_Or_Timeout);
+          LLRP_TagObservationTrigger_setNumberOfTags(pAISpecTagObservationTrigger, (llrp_u16_t)reader->numberOfTagsToRead);
+          LLRP_TagObservationTrigger_setTimeout(pAISpecTagObservationTrigger, readDuration);
+          LLRP_AISpecStopTrigger_setAISpecStopTriggerType(pAISpecStopTrigger, LLRP_AISpecStopTriggerType_Tag_Observation);
+          LLRP_AISpecStopTrigger_setTagObservationTrigger(pAISpecStopTrigger, pAISpecTagObservationTrigger);
+
+        }
+        else
+        {
+          LLRP_AISpecStopTrigger_setAISpecStopTriggerType(pAISpecStopTrigger, LLRP_AISpecStopTriggerType_Duration);
+          LLRP_AISpecStopTrigger_setDurationTrigger(pAISpecStopTrigger, readDuration);
+        }
       }
 
       /* Set AISpec stop trigger */
@@ -2374,9 +2509,10 @@ TMR_LLRP_cmdAddROSpec(TMR_Reader *reader, uint16_t readDuration,
 #ifdef TMR_ENABLE_ISO180006B
       else if (TMR_TAG_PROTOCOL_ISO180006B == protocol)
         {
-          /* For other protocol specify the Inventory Parameter protocol ID as unspecified */
-          LLRP_InventoryParameterSpec_setProtocolID(pInventoryParameterSpec, LLRP_AirProtocols_Unspecified);
           LLRP_tSThingMagicCustomAirProtocols *pInventoryParameterCustom;
+
+		  /* For other protocol specify the Inventory Parameter protocol ID as unspecified */
+          LLRP_InventoryParameterSpec_setProtocolID(pInventoryParameterSpec, LLRP_AirProtocols_Unspecified);
           pInventoryParameterCustom = LLRP_ThingMagicCustomAirProtocols_construct();
           LLRP_ThingMagicCustomAirProtocols_setcustomProtocolId(pInventoryParameterCustom,
               LLRP_ThingMagicCustomAirProtocolList_Iso180006b);
@@ -2387,9 +2523,10 @@ TMR_LLRP_cmdAddROSpec(TMR_Reader *reader, uint16_t readDuration,
 #endif /* TMR_ENABLE_ISO180006B */
       else if(TMR_TAG_PROTOCOL_ATA == protocol)
       {
+        LLRP_tSThingMagicCustomAirProtocols *pInventoryParameterCustom;
+
         /* For other protocol specify the Inventory Parameter protocol ID as unspecified */
         LLRP_InventoryParameterSpec_setProtocolID(pInventoryParameterSpec, LLRP_AirProtocols_Unspecified);
-        LLRP_tSThingMagicCustomAirProtocols *pInventoryParameterCustom;
         pInventoryParameterCustom = LLRP_ThingMagicCustomAirProtocols_construct();
         LLRP_ThingMagicCustomAirProtocols_setcustomProtocolId(pInventoryParameterCustom,
             LLRP_ThingMagicCustomAirProtocolList_Ata);
@@ -2399,9 +2536,10 @@ TMR_LLRP_cmdAddROSpec(TMR_Reader *reader, uint16_t readDuration,
       }
       else if(TMR_TAG_PROTOCOL_IPX64 == protocol)
       {
-        /* For other protocol specify the Inventory Parameter protocol ID as unspecified */
-        LLRP_InventoryParameterSpec_setProtocolID(pInventoryParameterSpec, LLRP_AirProtocols_Unspecified);
         LLRP_tSThingMagicCustomAirProtocols *pInventoryParameterCustom;
+
+		/* For other protocol specify the Inventory Parameter protocol ID as unspecified */
+        LLRP_InventoryParameterSpec_setProtocolID(pInventoryParameterSpec, LLRP_AirProtocols_Unspecified);
         pInventoryParameterCustom = LLRP_ThingMagicCustomAirProtocols_construct();
         LLRP_ThingMagicCustomAirProtocols_setcustomProtocolId(pInventoryParameterCustom,
             LLRP_ThingMagicCustomAirProtocolList_IPX64);
@@ -2411,9 +2549,10 @@ TMR_LLRP_cmdAddROSpec(TMR_Reader *reader, uint16_t readDuration,
       }
       else if(TMR_TAG_PROTOCOL_IPX256 == protocol)
       {
-        /* For other protocol specify the Inventory Parameter protocol ID as unspecified */
-        LLRP_InventoryParameterSpec_setProtocolID(pInventoryParameterSpec, LLRP_AirProtocols_Unspecified);
         LLRP_tSThingMagicCustomAirProtocols *pInventoryParameterCustom;
+
+		/* For other protocol specify the Inventory Parameter protocol ID as unspecified */
+        LLRP_InventoryParameterSpec_setProtocolID(pInventoryParameterSpec, LLRP_AirProtocols_Unspecified);
         pInventoryParameterCustom = LLRP_ThingMagicCustomAirProtocols_construct();
         LLRP_ThingMagicCustomAirProtocols_setcustomProtocolId(pInventoryParameterCustom,
             LLRP_ThingMagicCustomAirProtocolList_IPX256);
@@ -2981,18 +3120,20 @@ TMR_LLRP_parseMetadataFromMessage(TMR_Reader *reader, TMR_TagReadData *data, LLR
     /**
      * Copy the timestamp
      **/
-    llrp_u64_t msSinceEpoch = (pTagReportData->pLastSeenTimestampUTC->Microseconds)/1000;
-    data->dspMicros = (msSinceEpoch % 1000);
-    data->timestampHigh = (msSinceEpoch>>32) & 0xFFFFFFFF;
-    data->timestampLow  = (msSinceEpoch>> 0) & 0xFFFFFFFF;
-    data->metadataFlags |= TMR_TRD_METADATA_FLAG_TIMESTAMP;
+	{
+		llrp_u64_t msSinceEpoch = (pTagReportData->pLastSeenTimestampUTC->Microseconds)/1000;
+		data->dspMicros = (uint32_t)(msSinceEpoch % 1000);
+		data->timestampHigh = (uint32_t)(msSinceEpoch>>32) & 0xFFFFFFFF;
+		data->timestampLow  = (uint32_t)(msSinceEpoch>> 0) & 0xFFFFFFFF;
+		data->metadataFlags |= TMR_TRD_METADATA_FLAG_TIMESTAMP;
+	}
 
     /**
      * Copy the rest of metadata
      * TODO: Add support for other metadata when the 
      * server side has implemenation.
      **/
-    data->antenna = pTagReportData->pAntennaID->AntennaID;
+    data->antenna = (uint8_t)pTagReportData->pAntennaID->AntennaID;
     data->metadataFlags |= TMR_TRD_METADATA_FLAG_ANTENNAID;
     data->readCount = pTagReportData->pTagSeenCount->TagCount;
     data->metadataFlags |= TMR_TRD_METADATA_FLAG_READCOUNT;
@@ -3024,7 +3165,7 @@ TMR_LLRP_parseMetadataFromMessage(TMR_Reader *reader, TMR_TagReadData *data, LLR
        * Initialize the protocol form the readPlanProtocolList
        * depending upon the rospec id
        **/ 
-      int protocolindex;
+      unsigned int protocolindex;
       for (protocolindex = 0; protocolindex <= pTagReportData->pROSpecID->ROSpecID; protocolindex++)
       {
         if (protocolindex == pTagReportData->pROSpecID->ROSpecID)
@@ -4307,7 +4448,11 @@ TMR_LLRP_cmdGetThingMagicCurrentTime(TMR_Reader *reader, struct tm *curTime)
     {
       llrp_utf8v_t readerCT;
       readerCT = LLRP_ThingMagicCurrentTime_getReaderCurrentTime ((LLRP_tSThingMagicCurrentTime *) pCustParam);
-      if (!strptime((const char *)readerCT.pValue, "%Y-%m-%dT%H:%M:%S", curTime))
+#ifndef WIN32
+	  /* Until a satisfactory Windows replacement for strptime can be found, just stub out this call (and always fail).
+	   * Release note that LLRP GetThingMagicCurrentTime is not supported on Windows. */
+	  if (!strptime((const char *)readerCT.pValue, "%Y-%m-%dT%H:%M:%S", curTime))
+#endif
       {
         return TMR_ERROR_LLRP_MSG_PARSE_ERROR;
       }
@@ -5563,6 +5708,7 @@ TMR_LLRP_cmdSetTMLicenseKey(TMR_Reader *reader, TMR_uint8List *license)
   LLRP_tSMessage                          *pRspMsg;
   LLRP_tSSET_READER_CONFIG_RESPONSE       *pRsp;
   LLRP_tSThingMagicLicenseKey             *pTMLicense;
+  llrp_u8v_t key;
 
   ret = TMR_SUCCESS;
   /**
@@ -5576,7 +5722,6 @@ TMR_LLRP_cmdSetTMLicenseKey(TMR_Reader *reader, TMR_uint8List *license)
   pTMLicense = LLRP_ThingMagicLicenseKey_construct();
 
   /* Set the License key */
-  llrp_u8v_t key;
   key = LLRP_u8v_construct(license->len);
   key.nValue = license->len;
   memcpy(key.pValue, license->list, license->len);
@@ -6590,9 +6735,18 @@ llrp_receiver_thread(void *arg)
       FD_SET(pConn->fd, &set);
       tv.tv_sec = 0;
       tv.tv_usec = BACKGROUND_RECEIVER_LOOP_PERIOD * 1000;
-      ret = select(pConn->fd + 1, &set, NULL, NULL, &tv);
+	  {
+#if defined(WIN32)|| defined(WINCE)
+        int nfds = -1;
+#else
+        int nfds = pConn->fd + 1;
+#endif
+        ret = select(nfds, &set, NULL, NULL, &tv);
+	  }
       if (0 < ret)
       {
+        if(true == reader->continuousReading)
+          pthread_mutex_lock(&reader->u.llrpReader.receiverLock);
         /* check for new message in Inbox */
         ret = TMR_LLRP_receiveMessage(reader, &pMsg, lr->transportTimeout);
         if (TMR_SUCCESS != ret)
@@ -6603,6 +6757,8 @@ llrp_receiver_thread(void *arg)
            * Do nothing here
            **/
           receive_failed = true;
+          if(true == reader->continuousReading)
+            pthread_mutex_unlock(&reader->u.llrpReader.receiverLock);
         }
         else
         {
@@ -6613,6 +6769,8 @@ llrp_receiver_thread(void *arg)
           ret = TMR_LLRP_processReceivedMessage(reader, pMsg);
           ka_start_flag = true;
           receive_failed = false;
+          if(true == reader->continuousReading)
+            pthread_mutex_unlock(&reader->u.llrpReader.receiverLock);
         }
       }
     }
@@ -6635,28 +6793,45 @@ llrp_receiver_thread(void *arg)
       if (ka_start_flag)
       {
         reader->u.llrpReader.ka_start = tmr_gettime();
+        pthread_mutex_lock(&reader->u.llrpReader.receiverLock);
+        reader->u.llrpReader.keepAliveAckMissCnt = 0;
+        pthread_mutex_unlock(&reader->u.llrpReader.receiverLock);
         ka_start_flag = false;
       }
       reader->u.llrpReader.ka_now = tmr_gettime();
       diffTime = reader->u.llrpReader.ka_now - reader->u.llrpReader.ka_start;
+      /* Count the number of KEEP_ALIVEs missed.*/
+      if(((TMR_LLRP_KEEP_ALIVE_TIMEOUT * (reader->u.llrpReader.keepAliveAckMissCnt + 1)) < diffTime) && 
+         (reader->u.llrpReader.keepAliveAckMissCnt < MAX_KEEP_ALIVE_ACK_MISSES))
+      {
+        pthread_mutex_lock(&reader->u.llrpReader.receiverLock);
+        reader->u.llrpReader.keepAliveAckMissCnt++;
+        pthread_mutex_unlock(&reader->u.llrpReader.receiverLock);
+      }
       if ((TMR_LLRP_KEEP_ALIVE_TIMEOUT * 4) < diffTime)
       {
-        /**
-         * We have waited for enough time (4 times keep alive duration), 
-         * and still there is no response from reader. 
-         * Connection might be lost. Indicate an error so that the
-         * continuous reading will be stopped.
-         **/
+        if(reader->u.llrpReader.keepAliveAckMissCnt >= MAX_KEEP_ALIVE_ACK_MISSES)
+        {
+          pthread_mutex_lock(&reader->u.llrpReader.receiverLock);
+          reader->u.llrpReader.keepAliveAckMissCnt = 0;
+          pthread_mutex_unlock(&reader->u.llrpReader.receiverLock);
+          /**
+           * We have waited for enough time (4 times keep alive duration), 
+           * and still there is no response from reader. 
+           * Connection might be lost. Indicate an error so that the
+           * continuous reading will be stopped.
+           **/
 
-        /**
-         * Set numOfROSpec events to -1, indicating an unknown error
-         * occured during the read process.
-         **/
-        pthread_mutex_lock(&lr->receiverLock);
-        lr->numOfROSpecEvents = -1;
-        pthread_cond_broadcast(&lr->receiverCond);
-        pthread_mutex_unlock(&lr->receiverLock);
-        ka_start_flag = true;
+          /**
+           * Set numOfROSpec events to -1, indicating an unknown error
+           * occured during the read process.
+           **/
+          pthread_mutex_lock(&lr->receiverLock);
+          lr->numOfROSpecEvents = -1;
+          pthread_cond_broadcast(&lr->receiverCond);
+          pthread_mutex_unlock(&lr->receiverLock);
+          ka_start_flag = true;
+        }
       }
     }
 
@@ -7018,7 +7193,7 @@ TMR_LLRP_msgPrepareAccessCommand(TMR_Reader *reader,
           /* Set Memory Bank */
           LLRP_C1G2Read_setMB(pC1G2Read, (llrp_u2_t)args->bank);
           /* Set word pointer */
-          LLRP_C1G2Read_setWordPointer(pC1G2Read, args->wordAddress);
+          LLRP_C1G2Read_setWordPointer(pC1G2Read, (llrp_u16_t)args->wordAddress);
           /* Set word length to read */
           LLRP_C1G2Read_setWordCount(pC1G2Read, args->len);
 
@@ -7046,7 +7221,7 @@ TMR_LLRP_msgPrepareAccessCommand(TMR_Reader *reader,
           /* Set Memory Bank */
           LLRP_C1G2BlockErase_setMB(pC1G2BlockErase, (llrp_u2_t)args->bank);
           /* Set word pointer */
-          LLRP_C1G2BlockErase_setWordPointer(pC1G2BlockErase, args->wordPtr);
+          LLRP_C1G2BlockErase_setWordPointer(pC1G2BlockErase, (llrp_u16_t)args->wordPtr);
           /* Set word count to erase */
           LLRP_C1G2BlockErase_setWordCount(pC1G2BlockErase, (llrp_u16_t)args->wordCount);
 
@@ -7112,7 +7287,7 @@ TMR_LLRP_msgPrepareAccessCommand(TMR_Reader *reader,
           /* Set Memory Bank */
           LLRP_C1G2Write_setMB(pC1G2WriteData, (llrp_u2_t)args->bank);
           /* Set word pointer */
-          LLRP_C1G2Write_setWordPointer(pC1G2WriteData, args->wordAddress);
+          LLRP_C1G2Write_setWordPointer(pC1G2WriteData, (llrp_u16_t)args->wordAddress);
           /* Set the data to be written */
           data = LLRP_u16v_construct (args->data.len);
           memcpy (data.pValue, args->data.list, data.nValue * sizeof(uint16_t));
@@ -7598,7 +7773,7 @@ TMR_LLRP_msgPrepareAccessCommand(TMR_Reader *reader,
           /* Set Memory Bank */
           LLRP_C1G2BlockWrite_setMB(pC1G2BlockWrite, (llrp_u2_t)args->bank);
           /* Set word pointer */
-          LLRP_C1G2BlockWrite_setWordPointer(pC1G2BlockWrite, args->wordPtr);
+          LLRP_C1G2BlockWrite_setWordPointer(pC1G2BlockWrite, (llrp_u16_t)args->wordPtr);
           /* Set the data to be written */
           data = LLRP_u16v_construct (args->data.len);
           memcpy (data.pValue, args->data.list, data.nValue * sizeof(uint16_t));

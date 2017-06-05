@@ -31,7 +31,11 @@
  */
 
 #include "tm_config.h"
+#ifdef WINCE
+#include <stdint_win32.h>
+#else
 #include <stdint.h>
+#endif
 
 #ifdef  __cplusplus
 extern "C" {
@@ -221,6 +225,7 @@ typedef uint32_t TMR_Status;
 #define TMR_ERROR_LLRP_UNDEFINED_VALUE        TMR_ERROR_LLRP_SPECIFIC(9)
 #define TMR_ERROR_LLRP_READER_ERROR           TMR_ERROR_LLRP_SPECIFIC(10)
 #define TMR_ERROR_LLRP_READER_CONNECTION_LOST TMR_ERROR_LLRP_SPECIFIC(11)
+#define TMR_ERROR_LLRP_CLIENT_CONNECTION_EXISTS     TMR_ERROR_LLRP_SPECIFIC(12)
 
 #ifdef TMR_ENABLE_ERROR_STRINGS
 const char *TMR_strerror(TMR_Status status);

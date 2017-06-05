@@ -48,6 +48,7 @@
 #define LLRP_PREFIX "llrp://"
 #define LLRP_PREFIX_LEN (sizeof(LLRP_PREFIX)-1)
 
+TMR_Status restart_reading(struct TMR_Reader *reader);
 
 /**
  * Private: Should not be used by user level application.
@@ -136,7 +137,6 @@ TMR_create(TMR_Reader *reader, const char* deviceUri)
   pthread_cond_init(&reader->readCond, NULL);
   pthread_mutex_init(&reader->listenerLock, NULL);
   pthread_mutex_init(&reader->queue_lock, NULL);
-  reader->readListeners = NULL;
   reader->authReqListeners = NULL;
   reader->readExceptionListeners = NULL;
   reader->statsListeners = NULL;
@@ -145,6 +145,7 @@ TMR_create(TMR_Reader *reader, const char* deviceUri)
   reader->backgroundSetup = false;
   reader->parserSetup = false;
 #endif
+  reader->readListeners = NULL;
   reader->dutyCycle = false;
   reader->paramWait = false;
   reader->hasContinuousReadStarted = false;
@@ -303,8 +304,12 @@ TMR_reader_init_internal(struct TMR_Reader *reader)
   TMR_RP_init_simple(&reader->readParams.defaultReadPlan, 0, NULL, 
                      TMR_TAG_PROTOCOL_GEN2, 1);
   reader->readParams.readPlan = &reader->readParams.defaultReadPlan;
-#ifdef TMR_ENABLE_BACKGROUND_READS
+#ifdef SINGLE_THREAD_ASYNC_READ
   reader->readParams.asyncOnTime = 250;
+  reader->readParams.asyncOffTime = 0;
+#endif
+#ifdef TMR_ENABLE_BACKGROUND_READS
+  reader->readParams.asyncOnTime = 250;  
   reader->readParams.asyncOffTime = 0;
 #if 0
   pthread_mutex_init(&reader->backgroundLock, NULL);
@@ -661,12 +666,24 @@ TMR_paramSet(struct TMR_Reader *reader, TMR_Param key, const void *value)
 
   switch (key)
   {
-#ifdef TMR_ENABLE_BACKGROUND_READS
+#if defined(TMR_ENABLE_BACKGROUND_READS)|| defined(SINGLE_THREAD_ASYNC_READ)
   case TMR_PARAM_READ_ASYNCOFFTIME:
       {
         if (TMR_READER_TYPE_LLRP != reader->readerType)
         {
-    reader->readParams.asyncOffTime = *(uint32_t *)value;
+			if (reader->readParams.asyncOffTime != *(uint32_t *)value)
+			{
+				uint32_t asyncOffTime = reader->readParams.asyncOffTime;
+				reader->readParams.asyncOffTime = *(uint32_t *)value;
+				if (reader->continuousReading)
+				{
+					ret = restart_reading(reader);
+					if(ret != TMR_SUCCESS)
+					{
+						reader->readParams.asyncOffTime = asyncOffTime;
+					}
+				}
+			}
         }
         else
         {
@@ -675,7 +692,21 @@ TMR_paramSet(struct TMR_Reader *reader, TMR_Param key, const void *value)
       }
     break;
   case TMR_PARAM_READ_ASYNCONTIME:
-    reader->readParams.asyncOnTime = *(uint32_t *)value;
+	  {
+		  if (reader->readParams.asyncOnTime != *(uint32_t *)value)
+		  {
+			  uint32_t asyncOnTime = reader->readParams.asyncOnTime;
+			  reader->readParams.asyncOnTime = *(uint32_t *)value;
+			  if (reader->continuousReading)
+			  {
+				  ret = restart_reading(reader);
+				  if(ret != TMR_SUCCESS)
+				  {
+					  reader->readParams.asyncOnTime = asyncOnTime;
+				  }
+			  }
+		  }
+	  }
     break;
 LEVEL1:
 #endif
@@ -701,7 +732,7 @@ TMR_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
     *plan = *reader->readParams.readPlan;
     break;
   }
-#ifdef TMR_ENABLE_BACKGROUND_READS
+#if defined(TMR_ENABLE_BACKGROUND_READS)|| defined(SINGLE_THREAD_ASYNC_READ) 
   case TMR_PARAM_READ_ASYNCOFFTIME:
   {
     if (TMR_READER_TYPE_LLRP != reader->readerType)

@@ -118,6 +118,7 @@ static const char *paramNames[1 + TMR_PARAM_MAX] = {
   "/reader/trigger/read/Gpi", /* TMR_PARAM_TRIGGER_READ_GPI */
   "/reader/metadataflags", /* TMR_PARAM_METADATAFLAG */
   "/reader/licensedFeatures",  /* TMR_PARAM_LICENSED_FEATURES */
+  "/reader/selectedProtocols",  /* TMR_PARAM_SELECTED_PROTOCOLS */
 };
 
 

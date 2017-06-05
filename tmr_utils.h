@@ -30,7 +30,11 @@
  * THE SOFTWARE.
  */
 
+#ifdef WINCE
+#include <stdint_win32.h>
+#else
 #include <stdint.h>
+#endif
 #include <stddef.h>
 
 #ifdef  __cplusplus

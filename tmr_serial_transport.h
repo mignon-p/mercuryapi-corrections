@@ -38,8 +38,10 @@ extern "C" {
 #include <sys/socket.h>
 #endif
 
-#ifdef WIN32
-#include <windows.h>
+#if defined(WIN32) || defined(WINCE)
+#if !defined(_WINSOCK2API_) && !defined(_WINSOCKAPI_)
+#include <winsock2.h>
+#endif
 #endif
 
 #ifdef OSDEP_SERIAL_INCLUDE
@@ -186,13 +188,13 @@ typedef struct TMR_SR_LlrpEapiTransportContext
  * @param context A TMR_SR_SerialPortNativeContext structure for the callbacks to use.
  * @param device The path or name of the serial device (@c /dev/ttyS0, @c COM1)
  */
-#ifdef WIN32
+#if defined(WIN32) || defined(WINCE)
 __declspec(dllexport)
 #endif
 TMR_Status TMR_SR_SerialTransportNativeInit(TMR_SR_SerialTransport *transport,
                                             TMR_SR_SerialPortNativeContext *context,
                                             const char *device);
-#ifdef WIN32
+#if defined(WIN32) || defined(WINCE)
 __declspec(dllexport)
 #endif
 TMR_Status TMR_SR_SerialTransportTcpNativeInit(TMR_SR_SerialTransport *transport,

@@ -38,7 +38,7 @@ extern "C" {
 /**
  * API version number
  */
-#define TMR_VERSION "1.29.2.10"
+#define TMR_VERSION "1.29.3.34"
 
 /**
  * Define this to enable support for devices that support the serial
@@ -85,8 +85,9 @@ extern "C" {
  * Define this to enable support for LLRP readers.
  * (Not yet available for Windows)
  */
-#ifndef WIN32
 #define TMR_ENABLE_LLRP_TRANSPORT
+#ifndef WIN32
+#define TMR_ENABLE_LLRP_SERIAL_TRANSPORT
 #endif
 
 /**
@@ -163,6 +164,9 @@ Note:To run readsync_baremetal codelet you have to
  * exist in some of the embedded  architectures.
  */
 #define  TMR_USE_STRERROR
+#if defined(WINCE)
+#undef TMR_USE_STRERROR
+#endif
 
 #else
 /**

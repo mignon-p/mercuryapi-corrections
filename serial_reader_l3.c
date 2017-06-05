@@ -36,6 +36,8 @@
 #include "serial_reader_imp.h"
 #include "tmr_utils.h"
 
+void
+notify_read_listeners(TMR_Reader *reader, TMR_TagReadData *trd);
 #ifdef TMR_ENABLE_SERIAL_READER
 
 static TMR_Status filterbytes(TMR_TagProtocol protocol,
@@ -404,7 +406,18 @@ TMR_SR_sendTimeout(TMR_Reader *reader, uint8_t *data, uint32_t timeoutMs)
   if (isContinuousReadParamSupported(reader))
   {
 	  while(reader->paramWait)
-	  { }
+	  {
+#ifdef SINGLE_THREAD_ASYNC_READ
+		TMR_TagReadData trd;
+		ret = TMR_hasMoreTags(reader);
+		if (TMR_SUCCESS == ret)
+		{
+			TMR_getNextTag(reader, &trd);
+			notify_read_listeners(reader, &trd);
+		}
+#endif
+	  }
+
 	  reader->paramWait = false;	  
 	  memcpy(data , &reader->paramMessage[5], reader->paramMessage[1] * sizeof(uint8_t));
 	  data[0] = 0xFF;
