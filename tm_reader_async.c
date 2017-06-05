@@ -40,6 +40,7 @@ TMR_Status restart_reading(struct TMR_Reader *reader);
 #include <semaphore.h>
 #include <time.h>
 #include <stdio.h>
+#include <string.h>
 
 #ifndef WIN32
 #include <sys/time.h>
