@@ -47,7 +47,7 @@ TMR_strerr(TMR_Reader *reader, TMR_Status status)
 
   if (TMR_ERROR_IS_COMM(status) && TMR_ERROR_COMM_IS_ERRNO(status))
   {
-#ifdef TMR_USE_STRERROR 
+#ifdef TMR_USE_STRERROR
     return strerror(TMR_ERROR_COMM_GET_ERRNO(status));
 #else
     return "Error";
@@ -75,6 +75,8 @@ TMR_strerr(TMR_Reader *reader, TMR_Status status)
         return "LLRP Reader GetTypeRegistry Failed";
       case TMR_ERROR_LLRP_CONNECTIONFAILED:
         return "LLRP Reader Connection attempt is failed";
+      case TMR_ERROR_LLRP_CLIENT_CONNECTION_EXISTS:
+        return "LLRP Reader Connection attempt is failed, A Client initiated connection already exists";
       case TMR_ERROR_LLRP_SENDIO_ERROR:
         return "LLRP Reader Send Messages failed";
       case TMR_ERROR_LLRP_RECEIVEIO_ERROR:

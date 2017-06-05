@@ -31,12 +31,19 @@
 #include "tm_config.h"
 #include "tmr_status.h"
 
-#ifdef WIN32
-#include <windows.h>
+#if defined(WIN32) || defined(WINCE)
 #include <stdio.h>
-#include <winsock.h>
+#if !defined(_WINSOCK2API_) && !defined(_WINSOCKAPI_)
+#include <winsock2.h>
+#endif
 #pragma comment(lib, "Ws2_32.lib")
-#define snprintf sprintf_s
+
+#  if defined(WINCE)
+#    define snprintf _snprintf
+#  else
+#    define snprintf sprintf_s
+#  endif
+
 #endif /* WIN32 */
 
 #include "tm_reader.h"

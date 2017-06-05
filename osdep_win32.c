@@ -25,9 +25,14 @@
  * THE SOFTWARE.
  */
 
-#include <windows.h>
+#if !defined(_WINSOCK2API_) && !defined(_WINSOCKAPI_)
+#include <winsock2.h>
+#endif
 #include <time.h>
 #include "osdep.h"
+
+/* FILETIME of Jan 1 1970 00:00:00. */
+static const unsigned __int64 epoch = ((unsigned __int64) 116444736000000000ULL);
 
 uint64_t
 tmr_gettime()
@@ -36,11 +41,14 @@ tmr_gettime()
   SYSTEMTIME st;
   FILETIME ft;
   LARGE_INTEGER li;    
+  struct timeval tv;
   GetSystemTime(&st);
   SystemTimeToFileTime(&st, &ft);
   li.LowPart = ft.dwLowDateTime;
   li.HighPart = ft.dwHighDateTime;
-  totalms=(((uint64_t)li.LowPart)>>32 || ((uint64_t)(li.HighPart)))/10000;
+  tv.tv_sec = (long) ((li.QuadPart - epoch) / 10000000L);
+  tv.tv_usec =(long) (st.wMilliseconds * 1000);
+  totalms = (((uint64_t)tv.tv_sec) * 1000) + ((uint64_t) tv.tv_usec) / 1000;
   return totalms;
 }
 
