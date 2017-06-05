@@ -36,6 +36,10 @@
 #include "serial_reader_imp.h"
 #include "tmr_utils.h"
 
+#ifndef BARE_METAL
+bool isSecureAccessEnabled;
+#endif
+
 void
 notify_read_listeners(TMR_Reader *reader, TMR_TagReadData *trd);
 #ifdef TMR_ENABLE_SERIAL_READER
