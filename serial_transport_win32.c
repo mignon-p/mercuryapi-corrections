@@ -31,10 +31,18 @@
 #include "tm_config.h"
 #include "tmr_status.h"
 
-#ifdef WIN32
-#include <windows.h>
+#if defined(WIN32) || defined(WINCE)
+#if !defined(_WINSOCK2API_) && !defined(_WINSOCKAPI_)
+#include <winsock2.h>
+#endif
 #include <stdio.h>
-#define snprintf sprintf_s 
+
+#  if defined(WINCE)
+#    define snprintf _snprintf
+#  else
+#    define snprintf sprintf_s
+#  endif
+
 #endif /* WIN32 */
 
 #include "tm_reader.h"
@@ -48,7 +56,7 @@ s_open(TMR_SR_SerialTransport *this)
 
   c = this->cookie;
   
-  c->handle = CreateFileA((LPCSTR)c->devicename,
+  c->handle = CreateFile((TCHAR*)c->devicename,
                          GENERIC_READ | GENERIC_WRITE,
                          0,             /* not shared */
                          NULL,          /* default security */

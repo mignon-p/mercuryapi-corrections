@@ -29,6 +29,7 @@
  */
 #include "tm_config.h"
 #ifdef TMR_ENABLE_LLRP_TRANSPORT
+#ifdef TMR_ENABLE_LLRP_SERIAL_TRANSPORT
 
 #include <errno.h>
 #include <netdb.h>
@@ -642,4 +643,5 @@ out:
   return ret;
 }
 
+#endif /* TMR_ENABLE_LLRP_SERIAL_TRANSPORT */
 #endif /* TMR_ENABLE_LLRP_TRANSPORT */

@@ -4298,7 +4298,7 @@ TMR_SR_SerialReader_init(TMR_Reader *reader)
   reader->u.serialReader.supportsPreamble = false;
   reader->u.serialReader.extendedEPC = false;
   reader->u.serialReader.powerMode = TMR_SR_POWER_MODE_INVALID;
-  reader->u.serialReader.transportTimeout = 1000;
+  reader->u.serialReader.transportTimeout = 5000;
   reader->u.serialReader.commandTimeout = 1000;
   reader->u.serialReader.regionId = TMR_REGION_NONE;
   reader->u.serialReader.tagsRemaining = 0;
