@@ -25,7 +25,9 @@
  * THE SOFTWARE.
  */
 
-#include <windows.h>
+#if !defined(_WINSOCK2API_) && !defined(_WINSOCKAPI_)
+#include <winsock2.h>
+#endif
 #include <time.h>
 #include "osdep.h"
 
