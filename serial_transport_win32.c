@@ -39,7 +39,7 @@
 
 #  if defined(WINCE)
 #    define snprintf _snprintf
-#  else
+#  elif !defined(__GNUC__)
 #    define snprintf sprintf_s
 #  endif
 
