@@ -1767,7 +1767,7 @@ TMR_SR_parseMetadataFromMessage(TMR_Reader *reader, TMR_TagReadData *read, uint1
     uint16_t epcDataLength;
     while (dataLength != 0)
     {
-      if (readOffSet == dataLength)
+      if (readOffSet >= dataLength)
         break;
       bank = ((read->data.list[readOffSet] >> 4) & 0x1F);
       epcDataLength = (read->data.list[readOffSet + 1] * 2);
