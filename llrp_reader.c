@@ -30,9 +30,18 @@
 #include "tm_reader.h"
 #ifdef TMR_ENABLE_LLRP_READER
 
+#include "tmr_utils.h"
+#include "osdep.h"
+#include "tmr_llrp_reader.h"
+#include "llrp_reader_imp.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#if defined(WIN32)|| defined(WINCE)  /* WIN32 or WINCE */
+#include <ws2tcpip.h>
+#else                                /* linux */
 #include <sys/socket.h>
 #include <errno.h>
 #include <netinet/in.h>
@@ -40,11 +49,9 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
+#endif                               /* WIN32 or WINCE */
 
-#include "tmr_utils.h"
-#include "osdep.h"
-#include "tmr_llrp_reader.h"
-#include "llrp_reader_imp.h"
+#define MAX_KEEP_ALIVE_ACK_MISSES 3
 
 extern uint8_t TMR_LLRP_gpiListSargas[];
 extern uint8_t TMR_LLRP_gpoListSargas[];
@@ -77,13 +84,13 @@ TMR_LLRP_initTxRxMapFromPorts(TMR_Reader *reader)
   for (i = 0; i < numPorts; i ++)
   {
     lr->portMask |= 1 << (ports[i].port - 1);
-    lr->staticTxRxMapData[i].antenna = ports[i].port;
-    lr->staticTxRxMapData[i].txPort  = ports[i].port;
-    lr->staticTxRxMapData[i].rxPort  = ports[i].port;
+    lr->staticTxRxMapData[i].antenna = (uint8_t)ports[i].port;
+    lr->staticTxRxMapData[i].txPort  = (uint8_t)ports[i].port;
+    lr->staticTxRxMapData[i].rxPort  = (uint8_t)ports[i].port;
 
     if (0 == reader->tagOpParams.antenna && ports[i].connected)
     {
-      reader->tagOpParams.antenna = ports[i].port;
+      reader->tagOpParams.antenna = (uint8_t)ports[i].port;
     }
   }
 
@@ -154,7 +161,7 @@ TMR_LLRP_boot(TMR_Reader *reader)
   ret = TMR_LLRP_cmdGetReaderCapabilities(reader, &reader->u.llrpReader.capabilities);
   if (TMR_SUCCESS != ret)
   {
-    uint8_t length = strlen("NOT AVAILABLE");
+    uint8_t length = (uint8_t)strlen("NOT AVAILABLE");
     /**
      * Not Fatal, moving forward
      * Value might be changed, restore the default value.
@@ -222,6 +229,7 @@ TMR_LLRP_boot(TMR_Reader *reader)
   BITSET(lr->paramPresent, TMR_PARAM_REGION_SUPPORTEDREGIONS);
   BITSET(lr->paramPresent, TMR_PARAM_READ_ASYNCOFFTIME);
   BITSET(lr->paramPresent, TMR_PARAM_LICENSED_FEATURES);
+  BITSET(lr->paramPresent, TMR_PARAM_SELECTED_PROTOCOLS);
  
   for (i = 0; i < TMR_PARAMWORDS; i++)
   {
@@ -233,7 +241,8 @@ TMR_LLRP_boot(TMR_Reader *reader)
    * TODO: create a proper bitmask of supportedProtocols
    * by getting list of available protocols through /reader/supportedProtocols.
    **/
-   TMR_TagProtocol protocol[5];
+  {
+  TMR_TagProtocol protocol[5];
    TMR_TagProtocolList protocolList;
    protocolList.list = protocol;
    ret = TMR_LLRP_cmdGetTMDeviceProtocolCapabilities(reader, &protocolList);
@@ -245,7 +254,7 @@ TMR_LLRP_boot(TMR_Reader *reader)
       **/
      lr->supportedProtocols = (1 << (TMR_TAG_PROTOCOL_GEN2 - 1));
    }
-
+  }
   /**
    * Initialize txrxmap
    **/
@@ -510,7 +519,7 @@ TMR_LLRP_paramSet(struct TMR_Reader *reader, TMR_Param key, const void *value)
 
         /* Set the description asked by user */
         LLRP_utf8v_clear(&config.description);
-        config.description = LLRP_utf8v_construct(strlen(desc->value));
+        config.description = LLRP_utf8v_construct((llrp_u16_t)strlen(desc->value));
         strcpy((char *)config.description.pValue, desc->value);
         
         /* Set Reader Configuration */
@@ -546,7 +555,7 @@ TMR_LLRP_paramSet(struct TMR_Reader *reader, TMR_Param key, const void *value)
 
         /* Set the host name asked by user */
         LLRP_utf8v_clear(&config.hostName);
-        config.hostName = LLRP_utf8v_construct(strlen(hostname->value));
+        config.hostName = LLRP_utf8v_construct((llrp_u16_t)strlen(hostname->value));
         strcpy((char *)config.hostName.pValue, hostname->value);
 
         /* Set Reader Configuration */
@@ -838,7 +847,12 @@ TMR_LLRP_paramSet(struct TMR_Reader *reader, TMR_Param key, const void *value)
 
     case TMR_PARAM_LICENSED_FEATURES:
       {
-        ret = TMR_ERROR_UNSUPPORTED;
+        ret = TMR_ERROR_READONLY;
+        break;
+      }
+    case TMR_PARAM_SELECTED_PROTOCOLS:
+      {
+        ret = TMR_ERROR_READONLY;
         break;
       }
 #ifdef TMR_ENABLE_ISO180006B
@@ -968,14 +982,14 @@ TMR_LLRP_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
 
         if (u8List->max < numPorts)
         {
-          numPorts = u8List->max;
+          numPorts = (uint8_t)u8List->max;
         }
 
         for (i = 0; i < numPorts; i++)
         {
           if (ports[i].connected)
           {
-            LISTAPPEND(u8List, ports[i].port);
+            LISTAPPEND(u8List, (uint8_t)ports[i].port);
           }
         }
         break;
@@ -1003,7 +1017,7 @@ TMR_LLRP_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
           }
           if (u8List->max < numPins)
           {
-            numPins = u8List->max;
+            numPins = (uint8_t)u8List->max;
           }
 
           for(i = 0; i < numPins; i++)
@@ -1043,7 +1057,7 @@ TMR_LLRP_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
           }
           if (u8List->max < numPins)
           {
-            numPins = u8List->max;
+            numPins = (uint8_t)u8List->max;
           }
           for(i = 0; i < numPins; i++)
           {
@@ -1492,6 +1506,29 @@ TMR_LLRP_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
         }
         break;
       }
+    case TMR_PARAM_SELECTED_PROTOCOLS:
+      {
+        if(TMR_LLRP_MODEL_SARGAS == lr->capabilities.model)
+        {
+          TMR_TagProtocolList *protocol = (TMR_TagProtocolList *)value;
+          if (NULL == protocol->list)
+          {
+            ret = TMR_ERROR_ILLEGAL_VALUE;
+            break;
+          }
+          //ret = TMR_LLRP_cmdGetTMDeviceProtocolCapabilities(reader, (TMR_TagProtocolList *)protocol);
+          ret = TMR_LLRP_cmdGetSelectedProtocols(reader, (TMR_TagProtocolList*) protocol);
+          if (TMR_SUCCESS != ret)
+          {
+            break;
+          }
+        }
+        else
+        {
+          ret = TMR_ERROR_UNSUPPORTED;
+        }
+        break;
+      }
 #ifdef TMR_ENABLE_ISO180006B
     case TMR_PARAM_ISO180006B_DELIMITER:
       {
@@ -1618,6 +1655,7 @@ TMR_LLRP_LlrpReader_init(TMR_Reader *reader)
   /* Initialize keep alive params */
   reader->u.llrpReader.ka_start = 0;
   reader->u.llrpReader.ka_now   = 0;
+  reader->u.llrpReader.keepAliveAckMissCnt = 0;
   reader->u.llrpReader.get_report = false;
   reader->u.llrpReader.reportReceived = false;
   reader->u.llrpReader.isResponsePending = false;
@@ -1628,7 +1666,11 @@ TMR_LLRP_LlrpReader_init(TMR_Reader *reader)
 static TMR_Status
 TMR_LLRP_openConnectionToReader(TMR_Reader *reader, LLRP_tSConnection *pConn)
 {
-  int sock;
+#if defined(WIN32)|| defined(WINCE)  /* WIN32 or WINCE */
+    SOCKET sock;
+#else                                /* linux */
+    int sock;
+#endif                               /* WIN32 or WINCE */
   static const struct addrinfo addrInfoMask =
   {    
     0,   
@@ -1658,12 +1700,24 @@ TMR_LLRP_openConnectionToReader(TMR_Reader *reader, LLRP_tSConnection *pConn)
   /*
    * Make sure there isn't already a connection.
    */
-  if(0 <= pConn->fd)
+#if defined(WIN32)|| defined(WINCE)  /* WIN32 or WINCE */
+    if(INVALID_SOCKET != pConn->fd) 
+#else                                /* linux */                     
+    if(0 <= pConn->fd)
+#endif                               /* WIN32 or WINCE */
   {
     pConn->pConnectErrorStr = "already connected";
     return TMR_ERROR_LLRP_ALREADY_CONNECTED;
   }
-
+#if defined(WIN32)|| defined(WINCE)  /* WIN32 or WINCE */
+    /*
+     * On Windows have to enable the WinSock library
+     */
+    {
+        WSADATA SocketLibraryInitData;
+        WSAStartup(0xFFFF, &SocketLibraryInitData);
+    }
+#endif  /* WIN32 or WINCE */
   /*
    * Look up host using getaddrinfo().
    * Gethostbyname() could be configured a lot of
@@ -1693,7 +1747,11 @@ TMR_LLRP_openConnectionToReader(TMR_Reader *reader, LLRP_tSConnection *pConn)
    * Create the socket.
    */
   sock = socket(AF_INET, SOCK_STREAM, 0);
-  if(0 > sock)
+#if defined(WIN32)|| defined(WINCE) /* WIN32 or WINCE */
+    if(INVALID_SOCKET == sock)
+#else                        /* linux */
+    if(0 > sock)
+#endif                              /* WIN32 or WINCE*/
   {
     pConn->pConnectErrorStr = "socket() failed";
     return TMR_ERROR_LLRP_CONNECTIONFAILED;
@@ -1707,8 +1765,12 @@ TMR_LLRP_openConnectionToReader(TMR_Reader *reader, LLRP_tSConnection *pConn)
   {
     /* Connect failed */
     /* check for the error no */
+#if defined(WIN32)|| defined(WINCE) /* WIN32 or WINCE */
+    if (WSAECONNREFUSED ==  errno)
+#else                               /* linux */
     if (ECONNREFUSED ==  errno)
-    {
+#endif                              /* WIN32 or WINCE */
+	  {
       /** 
        * Server is not accepting any connection, lets wait some time and try
        * again.
@@ -1716,17 +1778,25 @@ TMR_LLRP_openConnectionToReader(TMR_Reader *reader, LLRP_tSConnection *pConn)
       tmr_sleep(1000);
     }
     pConn->pConnectErrorStr = "connect() failed";
+#if defined(WIN32)|| defined(WINCE)  /* WIN32 or WINCE */
+    closesocket(sock);	
+#else                                /* linux */
     close(sock);
+#endif                               /* WIN32 or WINCE */
     return TMR_ERROR_LLRP_CONNECTIONFAILED;
-  }
+	}
 
   /*
    * Best effort to set no delay. If this doesn't work
    * (no reason it shouldn't) we do not declare defeat.
    */
   flag = 1;
-  setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void*)&flag, sizeof flag);
 
+#if defined(WIN32)|| defined(WINCE)  /* WIN32 or WINCE */
+    setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char*)&flag, sizeof flag);
+#else                                /* linux */
+    setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void*)&flag, sizeof flag);
+#endif                               /* WIN32 or WINCE */
   /*
    * Record the socket in the connection instance
    */
@@ -1766,15 +1836,17 @@ TMR_LLRP_connect(TMR_Reader *reader)
   ret = TMR_LLRP_openConnectionToReader(reader, pConn);
   if(TMR_SUCCESS != ret)
   {
-    LLRP_Conn_destruct(pConn);
-    reader->u.llrpReader.pConn = NULL;
     sprintf(reader->u.llrpReader.errMsg,
             "Error: Connect - %s", pConn->pConnectErrorStr);
+		LLRP_Conn_destruct(pConn);
+		reader->u.llrpReader.pConn = NULL;
     return TMR_ERROR_LLRP_CONNECTIONFAILED;
   }
 
+  pthread_mutex_lock(&reader->u.llrpReader.receiverLock);
   /* Receive READER_EVENT_NOTIFICATION.ConnectionAttemptEvent */
   ret = TMR_LLRP_receiveMessage(reader, &pMsg, reader->u.llrpReader.commandTimeout);
+  pthread_mutex_unlock(&reader->u.llrpReader.receiverLock);
   if (TMR_SUCCESS != ret)
   {
     goto fail;
@@ -1816,6 +1888,13 @@ TMR_LLRP_connect(TMR_Reader *reader)
    */
   if(LLRP_ConnectionAttemptStatusType_Success != pEvent->eStatus)
   {
+    if(LLRP_ConnectionAttemptStatusType_Failed_A_Client_Initiated_Connection_Already_Exists == pEvent->eStatus)
+    {
+      TMR_LLRP_freeMessage(pMsg);
+      sprintf(reader->u.llrpReader.errMsg,
+          "Error: Connection attempt failed - Client connection already exists");
+      return TMR_ERROR_LLRP_CLIENT_CONNECTION_EXISTS;
+    }
     goto fail;
   }
 
@@ -1842,13 +1921,19 @@ fail:
 TMR_Status
 TMR_LLRP_destroy(TMR_Reader *reader)
 {
+  LLRP_tSMessage *pRspMsg = NULL;
+  uint8_t i;
+
+#if defined(WIN32)|| defined(WINCE)  /* WIN32 or WINCE */
+  LLRP_tSCLOSE_CONNECTION CloseConn = {0};
+  CloseConn.hdr.elementHdr.pType = &LLRP_tdCLOSE_CONNECTION;
+  CloseConn.hdr.MessageID        = reader->u.llrpReader.msgId ++;
+#else
   LLRP_tSCLOSE_CONNECTION CloseConn = {
     .hdr.elementHdr.pType = &LLRP_tdCLOSE_CONNECTION,
     .hdr.MessageID        = reader->u.llrpReader.msgId ++,
   };
-
-  LLRP_tSMessage *pRspMsg = NULL;
-  uint8_t i;
+#endif  
 
   /**
    * Terminate llrp receiver thread
@@ -1864,7 +1949,11 @@ TMR_LLRP_destroy(TMR_Reader *reader)
   pthread_mutex_lock(&reader->u.llrpReader.receiverLock);
   if (true == reader->u.llrpReader.receiverSetup)
   {
+#ifdef WIN32
+	Sleep(1);
+#else
     usleep(10);
+#endif
     reader->u.llrpReader.receiverSetup = false;
   }
   pthread_mutex_unlock(&reader->u.llrpReader.receiverLock);
@@ -1941,6 +2030,14 @@ TMR_LLRP_read_internal(TMR_Reader *reader,
   {
     antennaList = &rp->u.simple.antennas;
     reader->fastSearch = rp->u.simple.useFastSearch;
+    if(!reader->continuousReading)
+    {
+      /* Currently only supported for sync read case */
+      reader->isStopNTags = rp->u.simple.stopOnCount.stopNTriggerStatus;
+      reader->numberOfTagsToRead = rp->u.simple.stopOnCount.noOfTags;
+      if(reader->isStopNTags == true && reader->numberOfTagsToRead == 0)
+        return TMR_ERROR_INVALID;
+    }
   }
   else if (TMR_READ_PLAN_TYPE_MULTI == rp->type)
   {
@@ -2004,7 +2101,7 @@ TMR_LLRP_read_internal(TMR_Reader *reader,
       lr->roSpecId = 1;
     }
     lr->readPlanProtocol[lr->roSpecId].rospecProtocol = rp->u.simple.protocol;
-    lr->readPlanProtocol[lr->roSpecId].rospecID = lr->roSpecId;
+    lr->readPlanProtocol[lr->roSpecId].rospecID = (uint8_t)lr->roSpecId;
     ret = TMR_LLRP_cmdPrepareROSpec(reader, (uint16_t)timeoutMs, antennaList, 
                                   rp->u.simple.filter, rp->u.simple.protocol);
   }
@@ -2025,7 +2122,7 @@ TMR_LLRP_read_internal(TMR_Reader *reader,
       lr->roSpecId = 1;
     }
     lr->readPlanProtocol[lr->roSpecId].rospecProtocol = rp->u.simple.protocol;
-    lr->readPlanProtocol[lr->roSpecId].rospecID = lr->roSpecId;
+    lr->readPlanProtocol[lr->roSpecId].rospecID = (uint8_t)lr->roSpecId;
     ret = TMR_LLRP_cmdPrepareROSpec(reader, (uint16_t)timeoutMs, antennaList,
                                 rp->u.simple.filter, rp->u.simple.protocol);
     if (TMR_SUCCESS != ret)
@@ -2234,7 +2331,9 @@ TMR_LLRP_hasMoreTags(TMR_Reader *reader)
      * In case of continuous reading, user calling hasMoreTags
      * should free the lr->bufResponse which contains the response.
      **/
+    pthread_mutex_lock(&reader->u.llrpReader.receiverLock);
     ret = TMR_LLRP_receiveMessage(reader, &lr->bufResponse[0], timeout);
+    pthread_mutex_unlock(&reader->u.llrpReader.receiverLock);
     if (TMR_SUCCESS != ret)
     {
       TMR_LLRP_freeMessage(lr->bufResponse[0]);
@@ -2245,15 +2344,29 @@ TMR_LLRP_hasMoreTags(TMR_Reader *reader)
 
         reader->u.llrpReader.ka_now = tmr_gettime();
         diffTime = reader->u.llrpReader.ka_now - reader->u.llrpReader.ka_start;
+        /* Count the number of KEEP_ALIVEs missed */
+        if(((TMR_LLRP_KEEP_ALIVE_TIMEOUT * (reader->u.llrpReader.keepAliveAckMissCnt + 1)) < diffTime) && 
+           (reader->u.llrpReader.keepAliveAckMissCnt < MAX_KEEP_ALIVE_ACK_MISSES))
+        {
+          pthread_mutex_lock(&reader->u.llrpReader.receiverLock);
+          reader->u.llrpReader.keepAliveAckMissCnt++;
+          pthread_mutex_unlock(&reader->u.llrpReader.receiverLock);
+        }        
         if ((TMR_LLRP_KEEP_ALIVE_TIMEOUT * 4) < diffTime)
         {
-          /**
-           * We have waited for enough time (4 times keep alive duration), 
-           * and still there is no response from reader. 
-           * Connection might be lost. Indicate an error so that the
-           * continuous reading will be stopped.
-           **/
-          return TMR_ERROR_LLRP_READER_CONNECTION_LOST;
+          if(reader->u.llrpReader.keepAliveAckMissCnt >= MAX_KEEP_ALIVE_ACK_MISSES)
+          {
+            pthread_mutex_lock(&reader->u.llrpReader.receiverLock);
+            reader->u.llrpReader.keepAliveAckMissCnt = 0;
+            pthread_mutex_unlock(&reader->u.llrpReader.receiverLock);
+            /**
+             * We have waited for enough time (4 times keep alive duration), 
+             * and still there is no response from reader. 
+             * Connection might be lost. Indicate an error so that the
+             * continuous reading will be stopped.
+             **/
+            return TMR_ERROR_LLRP_READER_CONNECTION_LOST;
+          }
         }
       }
       return ret;
@@ -2314,6 +2427,9 @@ TMR_LLRP_hasMoreTags(TMR_Reader *reader)
          * Reset the ka_start time.
          **/
         reader->u.llrpReader.ka_start = tmr_gettime();
+        pthread_mutex_lock(&reader->u.llrpReader.receiverLock);
+        reader->u.llrpReader.keepAliveAckMissCnt = 0;
+        pthread_mutex_unlock(&reader->u.llrpReader.receiverLock);
 
         /* handle keepalive messages. */
         TMR_LLRP_handleKeepAlive(reader, lr->bufResponse[0]);
