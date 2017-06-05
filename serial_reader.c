@@ -4182,7 +4182,7 @@ TMR_SR_paramGet(struct TMR_Reader *reader, TMR_Param key, void *value)
     break;
   case TMR_PARAM_METADATAFLAG:
 	  {
-		*(uint16_t *)value = reader->userMetadataFlag;
+		*(TMR_TRD_MetadataFlag *)value = reader->userMetadataFlag;
 		break;
 	  }
 		    
