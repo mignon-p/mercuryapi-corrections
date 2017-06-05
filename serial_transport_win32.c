@@ -126,7 +126,7 @@ s_receiveBytes(TMR_SR_SerialTransport *this, uint32_t length,
               uint32_t* messageLength, uint8_t* message, const uint32_t
 timeoutMs)
 {
- uint32_t readLength;
+ DWORD readLength;
  DWORD errorFlags;
  COMSTAT comStat;
  TMR_SR_SerialPortNativeContext *c;
