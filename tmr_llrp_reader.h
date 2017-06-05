@@ -235,6 +235,8 @@ typedef struct TMR_LLRP_LlrpReader
   bool isResponsePending;
   /** To cancel the receiver thread */
   bool threadCancel;
+  /* To hold the No.of Keep alives missed count*/
+  uint8_t keepAliveAckMissCnt;
 }TMR_LLRP_LlrpReader;
 
 
