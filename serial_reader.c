@@ -41,6 +41,10 @@
 
 #ifdef TMR_ENABLE_SERIAL_READER
 
+#ifndef BARE_METAL
+bool isSecureAccessEnabled;
+#endif
+
 static TMR_Status
 initTxRxMapFromPorts(TMR_Reader *reader)
 {
